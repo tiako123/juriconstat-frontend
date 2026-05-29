@@ -25,7 +25,20 @@ export default function LoginScreen({ navigation }) {
         res.data.token
       );
     } catch (e) {
-      Alert.alert('Erreur', 'Email ou mot de passe incorrect');
+      console.error("Erreur Connexion complète :", e);
+      const errorData = e.response?.data;
+      if (errorData) {
+        if (errorData.erreur) {
+          Alert.alert('Erreur', errorData.erreur);
+        } else if (typeof errorData === 'object') {
+          const messages = Object.values(errorData).join('\n');
+          Alert.alert('Erreur', messages);
+        } else {
+          Alert.alert('Erreur', 'Connexion impossible');
+        }
+      } else {
+        Alert.alert('Erreur', 'Impossible de contacter le serveur. Vérifie ta connexion.');
+      }
     } finally {
       setLoading(false);
     }

@@ -22,13 +22,12 @@ export default function HomeScreen({ navigation }) {
     setLoading(true);
     try {
       const res = await api.post('/consultations', {
-        userId: user?.userId,
-        situation: input,
+        requete: input,
       });
       const botMsg = {
         id: Date.now() + 1,
         role: 'bot',
-        text: `📋 Articles applicables :\n${res.data.articles}\n\n✅ Actions à faire :\n${res.data.actions}\n\n🔵 Fiabilité : ${res.data.confiance}`,
+        text: res.data.reponseIa,
       };
       setMessages((prev) => [...prev, botMsg]);
     } catch (e) {

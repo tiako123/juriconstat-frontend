@@ -28,7 +28,21 @@ export default function RegisterScreen({ navigation }) {
       Alert.alert('Succès', 'Compte créé ! Connecte-toi.');
       navigation.navigate('Login');
     } catch (e) {
-      Alert.alert('Erreur', 'Inscription impossible');
+      console.error("Erreur Inscription complète :", e);
+      const errorData = e.response?.data;
+      if (errorData) {
+        if (errorData.erreur) {
+          Alert.alert('Erreur', errorData.erreur);
+        } else if (typeof errorData === 'object') {
+          // Concatène les messages d'erreurs de validation
+          const messages = Object.values(errorData).join('\n');
+          Alert.alert('Erreur de validation', messages);
+        } else {
+          Alert.alert('Erreur', 'Inscription impossible');
+        }
+      } else {
+        Alert.alert('Erreur', 'Impossible de contacter le serveur. Vérifie ta connexion.');
+      }
     } finally {
       setLoading(false);
     }
