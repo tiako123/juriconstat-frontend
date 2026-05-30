@@ -2,12 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput,
   TouchableOpacity, Alert, KeyboardAvoidingView, Platform, Switch, ActivityIndicator,
-  LayoutAnimation, UIManager
+  LayoutAnimation, UIManager, Animated
 } from 'react-native';
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import * as Print from 'expo-print';
@@ -15,17 +11,8 @@ import * as Sharing from 'expo-sharing';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
-import * as Notifications from 'expo-notifications';
 import * as FileSystem from 'expo-file-system';
 import api from '../../services/api';
-
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
 
 // ─── Simulated form sections, matching a real constat amiable ───────────────
 
@@ -84,6 +71,10 @@ export default function ConstatNumerique({ navigation }) {
   const [exported, setExported] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [isOcrLoading, setIsOcrLoading] = useState(false);
+
+  // Custom notification state
+  const [showNotification, setShowNotification] = useState(false);
+  const notificationAnim = useRef(new Animated.Value(-120)).current;
 
   // 0. ENTRY ANIMATION
   useEffect(() => {
@@ -204,17 +195,23 @@ export default function ConstatNumerique({ navigation }) {
 
   // 4. NOTIFICATIONS: Simuler la signature de l'autre conducteur
   const triggerRemoteSignatureSimulation = () => {
-    setTimeout(async () => {
+    setTimeout(() => {
       setSignedB(true);
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "✅ Signature reçue !",
-          body: "Le conducteur B vient de signer électroniquement le constat à distance.",
-          sound: true,
-        },
-        trigger: null,
-      });
-    }, 12000); // Déclenchement 12s après l'envoi
+      setShowNotification(true);
+      Animated.sequence([
+        Animated.timing(notificationAnim, {
+          toValue: 40, // slide down
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.delay(4000), // wait 4 seconds
+        Animated.timing(notificationAnim, {
+          toValue: -120, // slide back up
+          duration: 400,
+          useNativeDriver: true,
+        })
+      ]).start(() => setShowNotification(false));
+    }, 8000); // Déclenchement 8s après l'envoi
   };
 
   const update = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
@@ -322,8 +319,20 @@ export default function ConstatNumerique({ navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#0d0d0d' }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <View style={{ flex: 1, backgroundColor: '#0d0d0d' }}>
+      {/* Custom Notification Banner */}
+      {showNotification && (
+        <Animated.View style={[styles.notificationBanner, { transform: [{ translateY: notificationAnim }] }]}>
+          <Ionicons name="notifications" size={26} color="#fff" style={{ marginRight: 12 }} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.notificationTitle}>✅ Signature reçue !</Text>
+            <Text style={styles.notificationText}>Le conducteur B a signé le constat.</Text>
+          </View>
+        </Animated.View>
+      )}
+
+      <KeyboardAvoidingView style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content}>
 
         {/* Header */}
@@ -453,7 +462,8 @@ export default function ConstatNumerique({ navigation }) {
 
         <View style={{ height: 40 }} />
       </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -506,4 +516,11 @@ const styles = StyleSheet.create({
   gpsText: { color: '#52b788', fontSize: 12, marginLeft: 4, fontWeight: 'bold' },
   ocrBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#e07a5f', paddingVertical: 12, borderRadius: 10 },
   ocrBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
+
+  notificationBanner: { position: 'absolute', top: 0, left: 16, right: 16, zIndex: 1000, 
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#52b788', padding: 16, 
+    borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, 
+    shadowOpacity: 0.3, shadowRadius: 6, elevation: 10 },
+  notificationTitle: { color: '#fff', fontSize: 15, fontWeight: 'bold', marginBottom: 2 },
+  notificationText: { color: '#fff', fontSize: 13, opacity: 0.9 },
 });

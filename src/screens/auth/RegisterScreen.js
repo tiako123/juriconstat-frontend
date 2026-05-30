@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, ActivityIndicator, Alert, ScrollView, Animated, LayoutAnimation, UIManager, Platform
+  StyleSheet, ActivityIndicator, Alert, ScrollView, Animated, LayoutAnimation, UIManager, Platform, Image
 } from 'react-native';
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import api from '../../services/api';
 
@@ -21,6 +18,7 @@ export default function RegisterScreen({ navigation }) {
   });
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Animation values
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -104,8 +102,12 @@ export default function RegisterScreen({ navigation }) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+      <Animated.View style={[{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }, styles.formWrapper]}>
         
+        <View style={styles.logoContainer}>
+          <Image source={require('../../../assets/icon.png')} style={styles.logo} resizeMode="contain" />
+        </View>
+
         {/* Progress Bar */}
         <View style={styles.progressContainer}>
           <Animated.View style={[styles.progressBar, { width: progressWidth }]} />
@@ -116,7 +118,7 @@ export default function RegisterScreen({ navigation }) {
 
         {step === 1 && (
           <View style={styles.stepContainer}>
-            {['nom', 'email', 'password'].map((field) => (
+            {['nom', 'email'].map((field) => (
               <TextInput
                 key={field}
                 style={styles.input}
@@ -124,10 +126,26 @@ export default function RegisterScreen({ navigation }) {
                 placeholderTextColor="#666"
                 value={form[field]}
                 onChangeText={(v) => setForm({ ...form, [field]: v })}
-                secureTextEntry={field === 'password'}
                 autoCapitalize="none"
               />
             ))}
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Mot de passe"
+                placeholderTextColor="#666"
+                value={form.password}
+                onChangeText={(v) => setForm({ ...form, password: v })}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity 
+                style={styles.eyeIcon} 
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Ionicons name={showPassword ? "eye-off" : "eye"} size={20} color="#666" />
+              </TouchableOpacity>
+            </View>
             <TouchableOpacity style={styles.button} onPress={goToStep2} activeOpacity={0.8}>
               <Text style={styles.buttonText}>Continuer</Text>
             </TouchableOpacity>
@@ -176,7 +194,10 @@ export default function RegisterScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0d0d0d' },
-  content: { padding: 24, paddingTop: 60 },
+  content: { flexGrow: 1, justifyContent: 'center', padding: 24 },
+  formWrapper: { width: '100%' },
+  logoContainer: { alignItems: 'center', marginBottom: 20 },
+  logo: { width: 80, height: 80 },
   title: { fontSize: 28, fontWeight: 'bold',
     color: '#fff', marginBottom: 8, textAlign: 'center' },
   stepTitle: { fontSize: 14, color: '#52b788', textAlign: 'center', marginBottom: 24 },
@@ -186,6 +207,10 @@ const styles = StyleSheet.create({
   input: { backgroundColor: '#1a1a1a', color: '#fff',
     padding: 14, borderRadius: 8, marginBottom: 16,
     borderWidth: 1, borderColor: '#333' },
+  passwordContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1a1a1a',
+    borderRadius: 8, marginBottom: 16, borderWidth: 1, borderColor: '#333' },
+  passwordInput: { flex: 1, color: '#fff', padding: 14 },
+  eyeIcon: { padding: 14 },
   label: { color: '#888', marginBottom: 8, fontSize: 13, marginTop: 4 },
   picker: { backgroundColor: '#1a1a1a', borderRadius: 8,
     marginBottom: 20, borderWidth: 1, borderColor: '#333' },

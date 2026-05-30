@@ -5,10 +5,6 @@ import {
   KeyboardAvoidingView, Platform, Image, Alert, Animated, Pressable,
   LayoutAnimation, UIManager
 } from 'react-native';
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
