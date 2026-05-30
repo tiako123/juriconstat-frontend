@@ -11,6 +11,10 @@ import HomeScreen from '../screens/main/HomeScreen';
 import ProfilScreen from '../screens/main/ProfilScreen';
 import CollaborateursScreen from '../screens/main/CollaborateursScreen';
 import CommunauteScreen from '../screens/main/CommunauteScreen';
+import CollaborateurDetailScreen from '../screens/main/CollaborateurDetailScreen';
+import SearchHistoryScreen from '../screens/main/SearchHistoryScreen';
+import PostDetailScreen from '../screens/main/PostDetailScreen';
+import ConstatNumerique from '../screens/main/ConstatNumerique';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -18,13 +22,19 @@ const Stack = createStackNavigator();
 const MainTabs = () => (
   <Tab.Navigator
     screenOptions={({ route }) => ({
-      tabBarStyle: { backgroundColor: '#1a1a1a', borderTopColor: '#333' },
-      tabBarActiveTintColor: '#ffffff',
+      tabBarStyle: { 
+        backgroundColor: '#141414', 
+        borderTopColor: '#222',
+        height: 60,
+        paddingBottom: 8,
+        paddingTop: 8,
+      },
+      tabBarActiveTintColor: '#52b788',
       tabBarInactiveTintColor: '#666666',
       headerShown: false,
       tabBarIcon: ({ color, size }) => {
         const icons = {
-          'Assistant IA': 'home-outline',
+          'Assistant IA': 'chatbubble-ellipses-outline',
           'Community': 'people-outline',
         };
         return <Ionicons name={icons[route.name]} size={size} color={color} />;
@@ -43,11 +53,23 @@ const AuthStack = () => (
   </Stack.Navigator>
 );
 
+const MainStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="MainTabs" component={MainTabs} />
+    <Stack.Screen name="Profil" component={ProfilScreen} />
+    <Stack.Screen name="Collaborateurs" component={CollaborateursScreen} />
+    <Stack.Screen name="CollaborateurDetail" component={CollaborateurDetailScreen} />
+    <Stack.Screen name="SearchHistory" component={SearchHistoryScreen} />
+    <Stack.Screen name="PostDetail" component={PostDetailScreen} />
+    <Stack.Screen name="ConstatNumerique" component={ConstatNumerique} />
+  </Stack.Navigator>
+);
+
 export default function AppNavigator() {
   const { token } = useAuth();
   return (
     <NavigationContainer>
-      {token ? <MainTabs /> : <AuthStack />}
+      {token ? <MainStack /> : <AuthStack />}
     </NavigationContainer>
   );
-}
+}
