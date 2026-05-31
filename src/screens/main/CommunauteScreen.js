@@ -1,61 +1,125 @@
 import React from 'react';
 import {
   View, Text, StyleSheet,
-  ScrollView, TouchableOpacity
+  ScrollView, TouchableOpacity, Image, ImageBackground
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const POSTS = [
-  { id: 1, auteur: 'Marc', titre: 'Recherche d\'avocat',
-    image: true },
-  { id: 2, auteur: 'Marc', titre: 'Accident à Happy',
-    image: true },
+  { 
+    id: 1, 
+    auteur: 'Marie Martin',
+    authorAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=100',
+    titre: 'Recherche urgente d\'un avocat d\'expérience',
+    titreFull: 'Recherche urgente d\'un avocat - Accident avec délit de fuite',
+    excerpt: 'Bonjour à tous, je recherche de toute urgence un avocat spécialisé en droit routier et corporel suite à un délit de fuite...',
+    content: 'Bonjour à tous, je recherche de toute urgence un avocat spécialisé en droit des assurances et en préjudices corporels. J\'ai été victime d\'un grave accident de la circulation la semaine dernière au carrefour Happy. Le conducteur responsable a pris la fuite. Les caméras de surveillance ont filmé la scène mais l\'assurance refuse pour l\'instant de couvrir mes frais médicaux en l\'absence de procès-verbal de police finalisé. Si quelqu\'un a des conseils ou peut m\'accompagner, je vous serais extrêmement reconnaissante. Merci pour votre aide précieuse !',
+    imageUri: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=400',
+    time: 'Hier à 14:02',
+    likes: 24,
+    commentsCount: 2
+  },
+  { 
+    id: 2, 
+    auteur: 'Marc Dubois',
+    authorAvatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=100',
+    titre: 'Accident à Happy : Analyse des responsabilités',
+    titreFull: 'Accident à Happy : Qui est juridiquement responsable ?',
+    excerpt: 'Suite à l\'accident survenu au carrefour Happy, voici une analyse de la priorité à droite et du délit de fuite pénal...',
+    content: 'Chers membres, j\'ai analysé les règles du carrefour Happy. Beaucoup ignorent que la priorité à droite s\'applique en l\'absence de panneaux, même si la voie semble principale. Dans le cas de l\'accident de la semaine dernière, le véhicule venant de la droite avait la priorité absolue. Commettre un délit de fuite après un tel accrochage est un délit pénal passible de 3 ans d\'emprisonnement et 75 000 € d\'amende. Protégez-vous en installant des dashcams !',
+    imageUri: 'https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?auto=format&fit=crop&q=80&w=400',
+    time: 'Il y a 3 jours',
+    likes: 42,
+    commentsCount: 7
+  },
 ];
 
-export default function CommunauteScreen() {
+export default function CommunauteScreen({ navigation }) {
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {/* Header */}
       <View style={styles.header}>
-        <Ionicons name="menu" size={24} color="#fff" />
+        <Ionicons name="scale-outline" size={26} color="#52b788" />
         <Text style={styles.headerTitle}>Communauté</Text>
-        <View style={{ width: 24 }} />
-      </View>
-      {POSTS.map((post) => (
-        <TouchableOpacity key={post.id} style={styles.card}>
-          <View style={styles.thumbnail}>
-            <Ionicons name="image-outline" size={32} color="#555" />
-          </View>
-          <View style={styles.overlay}>
-            <View style={styles.authorRow}>
-              <View style={styles.avatar}>
-                <Ionicons name="person" size={14} color="#fff" />
-              </View>
-              <Text style={styles.author}>{post.auteur}</Text>
-            </View>
-            <Text style={styles.titre}>{post.titre}</Text>
-          </View>
+        <TouchableOpacity onPress={() => navigation.navigate('Collaborateurs')}>
+          <Ionicons name="people-outline" size={26} color="#fff" />
         </TouchableOpacity>
-      ))}
+      </View>
+
+      {/* Main post list */}
+      <View style={styles.feedContainer}>
+        {POSTS.map((post) => (
+          <TouchableOpacity 
+            key={post.id} 
+            style={styles.card}
+            onPress={() => navigation.navigate('PostDetail', { post })}
+          >
+            {/* Visual thumbnail wrapper with text overlay */}
+            <ImageBackground source={{ uri: post.imageUri }} style={styles.thumbnail}>
+              <View style={styles.gradientOverlay} />
+              
+              <View style={styles.topInfo}>
+                <Image source={{ uri: post.authorAvatar }} style={styles.avatar} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.author}>{post.auteur}</Text>
+                  <Text style={styles.time}>{post.time}</Text>
+                </View>
+              </View>
+
+              <View style={styles.bottomInfo}>
+                <Text style={styles.titre}>{post.titre}</Text>
+                <Text style={styles.excerpt} numberOfLines={2}>{post.excerpt}</Text>
+              </View>
+            </ImageBackground>
+
+            {/* Interaction Bar */}
+            <View style={styles.interactionBar}>
+              <View style={styles.stat}>
+                <Ionicons name="heart-outline" size={16} color="#888" style={{ marginRight: 4 }} />
+                <Text style={styles.statText}>{post.likes} J'aime</Text>
+              </View>
+              <View style={styles.stat}>
+                <Ionicons name="chatbubble-outline" size={16} color="#888" style={{ marginRight: 4 }} />
+                <Text style={styles.statText}>{post.commentsCount} Commentaires</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0d0d0d' },
+  content: { paddingBottom: 40 },
   header: { flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'space-between', padding: 16, paddingTop: 50,
-    backgroundColor: '#1a1a1a' },
+    justifyContent: 'space-between', paddingHorizontal: 16,
+    paddingTop: 54, paddingBottom: 16, backgroundColor: '#141414',
+    borderBottomWidth: 1, borderBottomColor: '#222' },
   headerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  card: { margin: 16, borderRadius: 12,
-    overflow: 'hidden', backgroundColor: '#1a1a1a' },
-  thumbnail: { height: 180, backgroundColor: '#222',
-    justifyContent: 'center', alignItems: 'center' },
-  overlay: { padding: 12 },
-  authorRow: { flexDirection: 'row',
-    alignItems: 'center', marginBottom: 6 },
-  avatar: { width: 24, height: 24, borderRadius: 12,
-    backgroundColor: '#333', justifyContent: 'center',
-    alignItems: 'center', marginRight: 8 },
-  author: { color: '#aaa', fontSize: 12 },
-  titre: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
+  
+  feedContainer: { padding: 16 },
+  card: { borderRadius: 16, overflow: 'hidden', backgroundColor: '#141414', marginBottom: 18,
+    borderWidth: 1, borderColor: '#222', elevation: 3 },
+  
+  thumbnail: { height: 240, justifyContent: 'space-between', padding: 16 },
+  gradientOverlay: { ...StyleSheet.absoluteFillObject, 
+    backgroundColor: 'rgba(0, 0, 0, 0.4)' },
+  
+  topInfo: { flexDirection: 'row', alignItems: 'center', zIndex: 2 },
+  avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#333',
+    marginRight: 10, borderWidth: 1, borderColor: '#52b788' },
+  author: { color: '#fff', fontSize: 13, fontWeight: 'bold' },
+  time: { color: '#bbb', fontSize: 11, marginTop: 1 },
+  
+  bottomInfo: { zIndex: 2 },
+  titre: { color: '#fff', fontSize: 16, fontWeight: 'bold', lineHeight: 22, textShadowColor: '#000',
+    textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+  excerpt: { color: '#ddd', fontSize: 12, marginTop: 6, lineHeight: 16, textShadowColor: '#000',
+    textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 1 },
+  
+  interactionBar: { flexDirection: 'row', alignItems: 'center', padding: 14, borderTopWidth: 1, borderTopColor: '#222' },
+  stat: { flexDirection: 'row', alignItems: 'center', marginRight: 24 },
+  statText: { color: '#888', fontSize: 12 }
 });
