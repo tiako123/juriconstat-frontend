@@ -4,6 +4,8 @@ import {
   ScrollView, TouchableOpacity, Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { colors, shadows } from '../../theme';
+import BrandBackdrop from '../../components/BrandBackdrop';
 
 const AVOCATS = [
   { 
@@ -43,7 +45,9 @@ const AVOCATS = [
 
 export default function CollaborateursScreen({ navigation }) {
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <View style={styles.root}>
+      <BrandBackdrop />
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
@@ -83,34 +87,36 @@ export default function CollaborateursScreen({ navigation }) {
           </TouchableOpacity>
         ))}
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0d0d0d' },
+  root: { flex: 1, backgroundColor: colors.bg },
+  container: { flex: 1, backgroundColor: 'transparent' },
   content: { paddingBottom: 40 },
   header: { flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between', paddingHorizontal: 16,
-    paddingTop: 54, paddingBottom: 16, backgroundColor: '#141414',
-    borderBottomWidth: 1, borderBottomColor: '#222' },
+    paddingTop: 54, paddingBottom: 16, backgroundColor: 'rgba(17, 27, 23, 0.92)',
+    borderBottomWidth: 1, borderBottomColor: colors.primaryDeep },
   backBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold', textAlign: 'center', flex: 1 },
+  headerTitle: { color: colors.text, fontSize: 18, fontWeight: '800', textAlign: 'center', flex: 1 },
   
   infoBanner: { flexDirection: 'row', alignItems: 'center', margin: 16, padding: 16,
-    backgroundColor: '#141414', borderRadius: 12, borderWidth: 1, borderColor: '#2d6a4f' },
-  infoBannerTitle: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
-  infoBannerSub: { color: '#888', fontSize: 12, marginTop: 4, lineHeight: 18 },
+    backgroundColor: colors.surface, borderRadius: 14, borderWidth: 1, borderColor: colors.primaryDeep, ...shadows.card },
+  infoBannerTitle: { color: colors.text, fontSize: 15, fontWeight: '800' },
+  infoBannerSub: { color: colors.textMuted, fontSize: 12, marginTop: 4, lineHeight: 18 },
 
   listContainer: { paddingHorizontal: 16 },
   card: { flexDirection: 'row', alignItems: 'center', padding: 16, 
-    backgroundColor: '#141414', borderRadius: 12, marginBottom: 12,
-    borderWidth: 1, borderColor: '#222' },
+    backgroundColor: 'rgba(17, 27, 23, 0.96)', borderRadius: 14, marginBottom: 12,
+    borderWidth: 1, borderColor: colors.border },
   avatar: { width: 64, height: 64, borderRadius: 32, marginRight: 16,
     backgroundColor: '#222', borderWidth: 1, borderColor: '#333' },
   info: { flex: 1 },
-  name: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  experience: { color: '#aaa', fontSize: 12, marginTop: 4, lineHeight: 16 },
+  name: { color: colors.text, fontSize: 16, fontWeight: '800' },
+  experience: { color: colors.textSoft, fontSize: 12, marginTop: 4, lineHeight: 16 },
   statsRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
   statsText: { color: '#666', fontSize: 11 }
 });

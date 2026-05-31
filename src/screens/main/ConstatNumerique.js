@@ -13,6 +13,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import api from '../../services/api';
+import { colors, shadows } from '../../theme';
+import BrandBackdrop from '../../components/BrandBackdrop';
 
 // ─── Simulated form sections, matching a real constat amiable ───────────────
 
@@ -319,7 +321,8 @@ export default function ConstatNumerique({ navigation }) {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0d0d0d' }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <BrandBackdrop />
       {/* Custom Notification Banner */}
       {showNotification && (
         <Animated.View style={[styles.notificationBanner, { transform: [{ translateY: notificationAnim }] }]}>
@@ -471,39 +474,39 @@ const styles = StyleSheet.create({
   content: { paddingBottom: 40 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingTop: 54, paddingBottom: 16,
-    backgroundColor: '#141414', borderBottomWidth: 1, borderBottomColor: '#222' },
+    backgroundColor: 'rgba(17, 27, 23, 0.92)', borderBottomWidth: 1, borderBottomColor: colors.primaryDeep },
   backBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold', flex: 1, textAlign: 'center' },
+  headerTitle: { color: colors.text, fontSize: 18, fontWeight: '800', flex: 1, textAlign: 'center' },
 
   banner: { flexDirection: 'row', alignItems: 'center', margin: 16, padding: 16,
-    backgroundColor: '#141414', borderRadius: 12, borderWidth: 1, borderColor: '#2d6a4f' },
-  bannerTitle: { color: '#fff', fontSize: 14, fontWeight: 'bold' },
-  bannerSub: { color: '#888', fontSize: 12, marginTop: 4, lineHeight: 16 },
+    backgroundColor: colors.surface, borderRadius: 14, borderWidth: 1, borderColor: colors.primaryDeep, ...shadows.card },
+  bannerTitle: { color: colors.text, fontSize: 14, fontWeight: '800' },
+  bannerSub: { color: colors.textMuted, fontSize: 12, marginTop: 4, lineHeight: 16 },
 
-  sectionBox: { marginHorizontal: 16, marginBottom: 16, backgroundColor: '#141414',
-    borderRadius: 12, padding: 16, borderWidth: 1, borderColor: '#222' },
-  sectionTitle: { color: '#52b788', fontSize: 13, fontWeight: 'bold', marginBottom: 14,
+  sectionBox: { marginHorizontal: 16, marginBottom: 16, backgroundColor: 'rgba(17, 27, 23, 0.96)',
+    borderRadius: 14, padding: 16, borderWidth: 1, borderColor: colors.border },
+  sectionTitle: { color: colors.primary, fontSize: 13, fontWeight: '800', marginBottom: 14,
     textTransform: 'uppercase', letterSpacing: 0.8 },
 
   fieldBox: { marginBottom: 12 },
-  fieldLabel: { color: '#aaa', fontSize: 12, marginBottom: 6 },
-  input: { backgroundColor: '#1a1a1a', color: '#fff', borderRadius: 8, paddingHorizontal: 12,
-    paddingVertical: 10, borderWidth: 1, borderColor: '#333', fontSize: 14 },
+  fieldLabel: { color: colors.textSoft, fontSize: 12, marginBottom: 6 },
+  input: { backgroundColor: colors.bgSoft, color: colors.text, borderRadius: 10, paddingHorizontal: 12,
+    paddingVertical: 10, borderWidth: 1, borderColor: colors.border, fontSize: 14 },
   multilineInput: { height: 90, textAlignVertical: 'top' },
 
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#222', marginBottom: 4 },
-  switchLabel: { color: '#fff', fontSize: 14, flex: 1 },
+  switchLabel: { color: colors.text, fontSize: 14, flex: 1 },
 
   sigNote: { color: '#666', fontSize: 12, marginBottom: 12, lineHeight: 16 },
   sigBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 12, borderRadius: 10, backgroundColor: '#1a3a2a', borderWidth: 1, borderColor: '#2d6a4f' },
-  sigBtnDone: { backgroundColor: '#2d6a4f', borderColor: '#52b788' },
+    paddingVertical: 12, borderRadius: 10, backgroundColor: colors.primarySoft, borderWidth: 1, borderColor: colors.primaryDeep },
+  sigBtnDone: { backgroundColor: colors.primaryDeep, borderColor: colors.primary },
   sigBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
 
   statusRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16,
     marginBottom: 20, paddingVertical: 12, paddingHorizontal: 16,
-    backgroundColor: '#141414', borderRadius: 10, borderWidth: 1, borderColor: '#222' },
+    backgroundColor: colors.surface, borderRadius: 12, borderWidth: 1, borderColor: colors.borderSoft },
   statusDot: { width: 10, height: 10, borderRadius: 5 },
   statusText: { color: '#888', fontSize: 12, marginLeft: 6 },
 

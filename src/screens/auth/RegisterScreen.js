@@ -6,6 +6,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import api from '../../services/api';
+import { colors, shadows } from '../../theme';
+import BrandBackdrop from '../../components/BrandBackdrop';
 
 const PAYS = ['Cameroun', 'Sénégal', 'Côte d\'Ivoire',
   'Mali', 'Burkina Faso', 'Congo', 'Gabon'];
@@ -102,19 +104,21 @@ export default function RegisterScreen({ navigation }) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <BrandBackdrop />
       <Animated.View style={[{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }, styles.formWrapper]}>
         
         <View style={styles.logoContainer}>
           <Image source={require('../../../assets/icon.png')} style={styles.logo} resizeMode="contain" />
         </View>
 
+        <Text style={styles.kicker}>Nouveau dossier</Text>
+        <Text style={styles.title}>Créer un compte</Text>
+        <Text style={styles.stepTitle}>Étape {step} sur 2</Text>
+
         {/* Progress Bar */}
         <View style={styles.progressContainer}>
           <Animated.View style={[styles.progressBar, { width: progressWidth }]} />
         </View>
-
-        <Text style={styles.title}>Créer un compte</Text>
-        <Text style={styles.stepTitle}>Étape {step} sur 2</Text>
 
         {step === 1 && (
           <View style={styles.stepContainer}>
@@ -193,33 +197,36 @@ export default function RegisterScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0d0d0d' },
+  container: { flex: 1, backgroundColor: colors.bg },
   content: { flexGrow: 1, justifyContent: 'center', padding: 24 },
-  formWrapper: { width: '100%' },
+  formWrapper: { width: '100%', backgroundColor: 'rgba(17, 27, 23, 0.93)',
+    borderWidth: 1, borderColor: colors.border, borderRadius: 20, padding: 18, ...shadows.card },
   logoContainer: { alignItems: 'center', marginBottom: 20 },
   logo: { width: 80, height: 80 },
-  title: { fontSize: 28, fontWeight: 'bold',
-    color: '#fff', marginBottom: 8, textAlign: 'center' },
-  stepTitle: { fontSize: 14, color: '#52b788', textAlign: 'center', marginBottom: 24 },
-  progressContainer: { height: 4, backgroundColor: '#333', borderRadius: 2, marginBottom: 24, overflow: 'hidden' },
-  progressBar: { height: '100%', backgroundColor: '#52b788', borderRadius: 2 },
+  kicker: { color: colors.primary, fontSize: 12, fontWeight: '800', textAlign: 'center',
+    textTransform: 'uppercase', letterSpacing: 1.1, marginBottom: 8 },
+  title: { fontSize: 28, fontWeight: '800',
+    color: colors.text, marginBottom: 8, textAlign: 'center' },
+  stepTitle: { fontSize: 14, color: colors.textMuted, textAlign: 'center', marginBottom: 18 },
+  progressContainer: { height: 5, backgroundColor: colors.bgSoft, borderRadius: 3, marginBottom: 24, overflow: 'hidden' },
+  progressBar: { height: '100%', backgroundColor: colors.primary, borderRadius: 3 },
   stepContainer: { width: '100%' },
-  input: { backgroundColor: '#1a1a1a', color: '#fff',
-    padding: 14, borderRadius: 8, marginBottom: 16,
-    borderWidth: 1, borderColor: '#333' },
-  passwordContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1a1a1a',
-    borderRadius: 8, marginBottom: 16, borderWidth: 1, borderColor: '#333' },
-  passwordInput: { flex: 1, color: '#fff', padding: 14 },
+  input: { backgroundColor: colors.bgSoft, color: colors.text,
+    padding: 15, borderRadius: 12, marginBottom: 14,
+    borderWidth: 1, borderColor: colors.border },
+  passwordContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgSoft,
+    borderRadius: 12, marginBottom: 14, borderWidth: 1, borderColor: colors.border },
+  passwordInput: { flex: 1, color: colors.text, padding: 15 },
   eyeIcon: { padding: 14 },
-  label: { color: '#888', marginBottom: 8, fontSize: 13, marginTop: 4 },
-  picker: { backgroundColor: '#1a1a1a', borderRadius: 8,
-    marginBottom: 20, borderWidth: 1, borderColor: '#333' },
-  button: { backgroundColor: '#2d6a4f', padding: 16,
-    borderRadius: 8, alignItems: 'center', marginTop: 8 },
-  buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  label: { color: colors.textMuted, marginBottom: 8, fontSize: 13, marginTop: 4 },
+  picker: { backgroundColor: colors.bgSoft, borderRadius: 12,
+    marginBottom: 20, borderWidth: 1, borderColor: colors.border },
+  button: { backgroundColor: colors.primaryDeep, padding: 16,
+    borderRadius: 12, alignItems: 'center', marginTop: 8 },
+  buttonText: { color: colors.text, fontWeight: '800', fontSize: 16 },
   rowButtons: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
-  backButton: { flex: 1, backgroundColor: '#333', padding: 16, borderRadius: 8, alignItems: 'center', marginRight: 8 },
-  backButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  submitButton: { flex: 2, backgroundColor: '#2d6a4f', padding: 16, borderRadius: 8, alignItems: 'center' },
-  link: { color: '#666', textAlign: 'center', marginTop: 24 },
+  backButton: { flex: 1, backgroundColor: colors.surfaceHigh, padding: 16, borderRadius: 12, alignItems: 'center', marginRight: 8 },
+  backButtonText: { color: colors.text, fontWeight: '800', fontSize: 16 },
+  submitButton: { flex: 2, backgroundColor: colors.primaryDeep, padding: 16, borderRadius: 12, alignItems: 'center' },
+  link: { color: colors.primary, textAlign: 'center', marginTop: 24, fontWeight: '700' },
 });

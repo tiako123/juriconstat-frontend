@@ -4,6 +4,8 @@ import {
   TouchableOpacity, Image, ImageBackground, Dimensions, Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { colors, shadows } from '../../theme';
+import BrandBackdrop from '../../components/BrandBackdrop';
 
 const { width } = Dimensions.get('window');
 
@@ -44,7 +46,9 @@ export default function CollaborateurDetailScreen({ route, navigation }) {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <View style={styles.root}>
+      <BrandBackdrop />
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Banner + Back Button */}
       <ImageBackground source={{ uri: avocat.banner }} style={styles.banner}>
         <TouchableOpacity style={styles.circleBackBtn} onPress={() => navigation.goBack()}>
@@ -166,17 +170,19 @@ export default function CollaborateurDetailScreen({ route, navigation }) {
           <Text style={styles.emptyPlaylistText}>Aucune playlist publique disponible</Text>
         </View>
       )}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0d0d0d' },
+  root: { flex: 1, backgroundColor: colors.bg },
+  container: { flex: 1, backgroundColor: 'transparent' },
   content: { paddingBottom: 40 },
   
-  errorContainer: { flex: 1, backgroundColor: '#0d0d0d', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  errorText: { color: '#fff', fontSize: 16, marginBottom: 20 },
-  backBtn: { paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#2d6a4f', borderRadius: 8 },
+  errorContainer: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  errorText: { color: colors.text, fontSize: 16, marginBottom: 20 },
+  backBtn: { paddingHorizontal: 20, paddingVertical: 10, backgroundColor: colors.primaryDeep, borderRadius: 8 },
   backText: { color: '#fff', fontWeight: 'bold' },
 
   banner: { height: 180, width: '100%', justifyContent: 'flex-start', padding: 16, paddingTop: 54 },
@@ -184,11 +190,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center' },
   
   avatarContainer: { alignItems: 'center', marginTop: -50 },
-  avatar: { width: 100, height: 100, borderRadius: 50, borderWidth: 4, borderColor: '#0d0d0d', backgroundColor: '#222' },
+  avatar: { width: 104, height: 104, borderRadius: 52, borderWidth: 4, borderColor: colors.bg, backgroundColor: colors.surface, ...shadows.card },
   
   infoSection: { alignItems: 'center', paddingHorizontal: 24, marginTop: 12 },
-  name: { color: '#fff', fontSize: 22, fontWeight: 'bold' },
-  specialty: { color: '#52b788', fontSize: 14, marginTop: 4, fontWeight: '500', textAlign: 'center' },
+  name: { color: colors.text, fontSize: 23, fontWeight: '800' },
+  specialty: { color: colors.primary, fontSize: 14, marginTop: 4, fontWeight: '600', textAlign: 'center' },
   
   statsRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 12 },
   statText: { color: '#888', fontSize: 12 },
@@ -201,10 +207,10 @@ const styles = StyleSheet.create({
   subBtnActive: { backgroundColor: '#333', borderWidth: 1, borderColor: '#444' },
   subBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
   
-  bioText: { color: '#bbb', fontSize: 13, lineHeight: 20, textAlign: 'center', marginTop: 12 },
+  bioText: { color: colors.textSoft, fontSize: 13, lineHeight: 20, textAlign: 'center', marginTop: 12 },
   
   // Custom Tabs Style
-  tabRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#222', marginTop: 24 },
+  tabRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.borderSoft, marginTop: 24 },
   tabItem: { flex: 1, alignItems: 'center', paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' },
   tabItemActive: { borderBottomColor: '#52b788' },
   tabText: { color: '#666', fontSize: 14, fontWeight: 'bold' },
@@ -212,9 +218,9 @@ const styles = StyleSheet.create({
   
   // Videos Grid & Cards Style
   videosSection: { padding: 16 },
-  sectionTitle: { color: '#fff', fontSize: 16, fontWeight: 'bold', marginBottom: 16 },
-  videoCard: { flexDirection: 'row', marginBottom: 16, backgroundColor: '#141414',
-    borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: '#222' },
+  sectionTitle: { color: colors.text, fontSize: 16, fontWeight: '800', marginBottom: 16 },
+  videoCard: { flexDirection: 'row', marginBottom: 16, backgroundColor: 'rgba(17, 27, 23, 0.96)',
+    borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: colors.border },
   videoThumbnail: { width: 130, height: 90, justifyContent: 'center', alignItems: 'center' },
   videoDurationContainer: { position: 'absolute', bottom: 6, right: 6,
     backgroundColor: 'rgba(0, 0, 0, 0.8)', paddingHorizontal: 4, paddingVertical: 2, borderRadius: 4 },

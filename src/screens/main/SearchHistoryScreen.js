@@ -6,6 +6,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import { colors } from '../../theme';
+import BrandBackdrop from '../../components/BrandBackdrop';
 
 export default function SearchHistoryScreen({ navigation }) {
   const { user } = useAuth();
@@ -93,6 +95,7 @@ export default function SearchHistoryScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+      <BrandBackdrop />
       {/* Search Header Bar */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
@@ -171,15 +174,15 @@ export default function SearchHistoryScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0d0d0d' },
+  container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16,
-    paddingTop: 54, paddingBottom: 16, backgroundColor: '#141414',
-    borderBottomWidth: 1, borderBottomColor: '#222' },
+    paddingTop: 54, paddingBottom: 16, backgroundColor: 'rgba(17, 27, 23, 0.92)',
+    borderBottomWidth: 1, borderBottomColor: colors.primaryDeep },
   backBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginRight: 8 },
   
-  searchBarContainer: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#222',
-    borderRadius: 20, paddingHorizontal: 12, height: 40, borderWidth: 1, borderColor: '#333' },
-  searchInput: { flex: 1, color: '#fff', fontSize: 14, height: '100%', padding: 0 },
+  searchBarContainer: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgSoft,
+    borderRadius: 20, paddingHorizontal: 12, height: 42, borderWidth: 1, borderColor: colors.border },
+  searchInput: { flex: 1, color: colors.text, fontSize: 14, height: '100%', padding: 0 },
 
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loaderText: { color: '#888', marginTop: 12, fontSize: 14 },
@@ -188,13 +191,13 @@ const styles = StyleSheet.create({
   sectionContainer: { marginBottom: 24 },
   sectionTitle: { color: '#666', fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 12, letterSpacing: 1 },
   
-  historyCard: { backgroundColor: '#141414', padding: 14, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: '#222' },
+  historyCard: { backgroundColor: 'rgba(17, 27, 23, 0.96)', padding: 14, borderRadius: 14, marginBottom: 10, borderWidth: 1, borderColor: colors.border },
   cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   chatIcon: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#1a2e26', justifyContent: 'center', alignItems: 'center' },
   cardTime: { color: '#666', fontSize: 11 },
   
-  cardQuery: { color: '#fff', fontSize: 14, fontWeight: 'bold', marginBottom: 4 },
-  cardResponse: { color: '#aaa', fontSize: 12, lineHeight: 18 },
+  cardQuery: { color: colors.text, fontSize: 14, fontWeight: '800', marginBottom: 4 },
+  cardResponse: { color: colors.textSoft, fontSize: 12, lineHeight: 18 },
 
   emptyContainer: { alignItems: 'center', justifyContent: 'center', padding: 40, marginTop: 40 },
   emptyText: { color: '#666', fontSize: 14, marginTop: 12, textAlign: 'center' }

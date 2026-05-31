@@ -4,6 +4,8 @@ import {
   ScrollView, TouchableOpacity, Image, ImageBackground
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { colors, shadows } from '../../theme';
+import BrandBackdrop from '../../components/BrandBackdrop';
 
 const POSTS = [
   { 
@@ -36,7 +38,9 @@ const POSTS = [
 
 export default function CommunauteScreen({ navigation }) {
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <View style={styles.root}>
+      <BrandBackdrop />
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header */}
       <View style={styles.header}>
         <Ionicons name="scale-outline" size={26} color="#52b788" />
@@ -86,26 +90,28 @@ export default function CommunauteScreen({ navigation }) {
           </TouchableOpacity>
         ))}
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0d0d0d' },
+  root: { flex: 1, backgroundColor: colors.bg },
+  container: { flex: 1, backgroundColor: 'transparent' },
   content: { paddingBottom: 40 },
   header: { flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between', paddingHorizontal: 16,
-    paddingTop: 54, paddingBottom: 16, backgroundColor: '#141414',
-    borderBottomWidth: 1, borderBottomColor: '#222' },
-  headerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+    paddingTop: 54, paddingBottom: 16, backgroundColor: 'rgba(17, 27, 23, 0.92)',
+    borderBottomWidth: 1, borderBottomColor: colors.primaryDeep },
+  headerTitle: { color: colors.text, fontSize: 18, fontWeight: '800' },
   
   feedContainer: { padding: 16 },
-  card: { borderRadius: 16, overflow: 'hidden', backgroundColor: '#141414', marginBottom: 18,
-    borderWidth: 1, borderColor: '#222', elevation: 3 },
+  card: { borderRadius: 18, overflow: 'hidden', backgroundColor: 'rgba(17, 27, 23, 0.96)', marginBottom: 18,
+    borderWidth: 1, borderColor: colors.primaryDeep, ...shadows.card },
   
-  thumbnail: { height: 240, justifyContent: 'space-between', padding: 16 },
+  thumbnail: { height: 250, justifyContent: 'space-between', padding: 16 },
   gradientOverlay: { ...StyleSheet.absoluteFillObject, 
-    backgroundColor: 'rgba(0, 0, 0, 0.4)' },
+    backgroundColor: 'rgba(0, 0, 0, 0.48)' },
   
   topInfo: { flexDirection: 'row', alignItems: 'center', zIndex: 2 },
   avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#333',
@@ -119,7 +125,7 @@ const styles = StyleSheet.create({
   excerpt: { color: '#ddd', fontSize: 12, marginTop: 6, lineHeight: 16, textShadowColor: '#000',
     textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 1 },
   
-  interactionBar: { flexDirection: 'row', alignItems: 'center', padding: 14, borderTopWidth: 1, borderTopColor: '#222' },
+  interactionBar: { flexDirection: 'row', alignItems: 'center', padding: 14, borderTopWidth: 1, borderTopColor: colors.borderSoft },
   stat: { flexDirection: 'row', alignItems: 'center', marginRight: 24 },
   statText: { color: '#888', fontSize: 12 }
 });

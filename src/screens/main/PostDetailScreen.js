@@ -4,6 +4,8 @@ import {
   TouchableOpacity, Image, TextInput, Alert, KeyboardAvoidingView, Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { colors, shadows } from '../../theme';
+import BrandBackdrop from '../../components/BrandBackdrop';
 
 export default function PostDetailScreen({ route, navigation }) {
   const { post } = route.params || {};
@@ -48,9 +50,10 @@ export default function PostDetailScreen({ route, navigation }) {
 
   return (
     <KeyboardAvoidingView 
-      style={{ flex: 1, backgroundColor: '#0d0d0d' }}
+      style={{ flex: 1, backgroundColor: colors.bg }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <BrandBackdrop />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         {/* Header */}
         <View style={styles.header}>
@@ -147,40 +150,40 @@ export default function PostDetailScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0d0d0d' },
+  container: { flex: 1, backgroundColor: 'transparent' },
   content: { paddingBottom: 40 },
   
-  errorContainer: { flex: 1, backgroundColor: '#0d0d0d', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  errorText: { color: '#fff', fontSize: 16, marginBottom: 20 },
-  backBtn: { paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#2d6a4f', borderRadius: 8 },
+  errorContainer: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  errorText: { color: colors.text, fontSize: 16, marginBottom: 20 },
+  backBtn: { paddingHorizontal: 20, paddingVertical: 10, backgroundColor: colors.primaryDeep, borderRadius: 8 },
   backText: { color: '#fff', fontWeight: 'bold' },
 
   header: { flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between', paddingHorizontal: 16,
-    paddingTop: 54, paddingBottom: 16, backgroundColor: '#141414',
-    borderBottomWidth: 1, borderBottomColor: '#222' },
+    paddingTop: 54, paddingBottom: 16, backgroundColor: 'rgba(17, 27, 23, 0.92)',
+    borderBottomWidth: 1, borderBottomColor: colors.primaryDeep },
   circleBackBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold', textAlign: 'center', flex: 1 },
+  headerTitle: { color: colors.text, fontSize: 18, fontWeight: '800', textAlign: 'center', flex: 1 },
 
-  postCard: { padding: 16, backgroundColor: '#141414', borderBottomWidth: 1, borderBottomColor: '#222' },
+  postCard: { margin: 16, padding: 16, backgroundColor: 'rgba(17, 27, 23, 0.96)', borderWidth: 1, borderColor: colors.border, borderRadius: 18, ...shadows.card },
   authorRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   authorAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#333', marginRight: 12 },
   authorDetails: { flex: 1 },
-  authorName: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
+  authorName: { color: colors.text, fontSize: 15, fontWeight: '800' },
   postTime: { color: '#666', fontSize: 12, marginTop: 2 },
   moreBtn: { padding: 4 },
   
-  postTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold', lineHeight: 24, marginVertical: 10 },
-  postBody: { color: '#ccc', fontSize: 14, lineHeight: 22, marginBottom: 16 },
+  postTitle: { color: colors.text, fontSize: 19, fontWeight: '800', lineHeight: 25, marginVertical: 10 },
+  postBody: { color: colors.textSoft, fontSize: 14, lineHeight: 22, marginBottom: 16 },
   postImage: { width: '100%', height: 200, borderRadius: 12, marginBottom: 16, backgroundColor: '#222' },
   
-  actionRow: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#222', paddingTop: 14 },
+  actionRow: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: colors.borderSoft, paddingTop: 14 },
   actionBtn: { flexDirection: 'row', alignItems: 'center' },
   actionBtnText: { color: '#888', fontSize: 12, marginLeft: 6, fontWeight: '500' },
 
-  commentsTitle: { color: '#fff', fontSize: 15, fontWeight: 'bold', margin: 16, marginBottom: 8 },
+  commentsTitle: { color: colors.text, fontSize: 15, fontWeight: '800', margin: 16, marginBottom: 8 },
   commentsList: { paddingHorizontal: 16 },
-  commentItem: { backgroundColor: '#141414', padding: 14, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: '#222' },
+  commentItem: { backgroundColor: 'rgba(17, 27, 23, 0.96)', padding: 14, borderRadius: 14, marginBottom: 10, borderWidth: 1, borderColor: colors.border },
   commentHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   commentAuthor: { color: '#fff', fontSize: 13, fontWeight: 'bold', marginRight: 8 },
   badge: { backgroundColor: '#2d6a4f', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
@@ -188,9 +191,9 @@ const styles = StyleSheet.create({
   commentText: { color: '#aaa', fontSize: 13, lineHeight: 18 },
 
   commentInputRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10,
-    backgroundColor: '#141414', borderTopWidth: 1, borderTopColor: '#222', paddingBottom: Platform.OS === 'ios' ? 24 : 10 },
-  input: { flex: 1, color: '#fff', backgroundColor: '#222', borderRadius: 22,
+    backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.borderSoft, paddingBottom: Platform.OS === 'ios' ? 24 : 10 },
+  input: { flex: 1, color: colors.text, backgroundColor: colors.bgSoft, borderRadius: 22,
     paddingHorizontal: 16, paddingVertical: 8, fontSize: 14, marginRight: 8, maxHeight: 100 },
-  sendBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#52b788',
+  sendBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary,
     justifyContent: 'center', alignItems: 'center' }
 });

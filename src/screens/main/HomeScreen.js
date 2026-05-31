@@ -11,6 +11,8 @@ import api from '../../services/api';
 import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
+import { colors, shadows } from '../../theme';
+import BrandBackdrop from '../../components/BrandBackdrop';
 
 export default function HomeScreen({ navigation, route }) {
   const [messages, setMessages] = useState([]);
@@ -422,6 +424,7 @@ export default function HomeScreen({ navigation, route }) {
 
   return (
     <View style={{ flex: 1 }}>
+      <BrandBackdrop />
       <KeyboardAvoidingView 
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -670,29 +673,29 @@ export default function HomeScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0d0d0d' },
+  container: { flex: 1, backgroundColor: 'transparent' },
   header: { flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between', paddingHorizontal: 16,
-    paddingTop: 54, paddingBottom: 16, backgroundColor: '#141414',
-    borderBottomWidth: 1, borderBottomColor: '#222' },
-  headerTitle: { color: '#fff', fontSize: 17, fontWeight: 'bold' },
+    paddingTop: 54, paddingBottom: 16, backgroundColor: 'rgba(17, 27, 23, 0.92)',
+    borderBottomWidth: 1, borderBottomColor: colors.primaryDeep },
+  headerTitle: { color: colors.text, fontSize: 17, fontWeight: '800' },
   
   messages: { padding: 16, flexGrow: 1, paddingBottom: 40 },
   
   // Empty State Design System
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 120, paddingHorizontal: 32 },
-  logoContainer: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#141414',
-    justifyContent: 'center', alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: '#2d6a4f' },
-  emptyTextTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 12, textAlign: 'center' },
-  emptyTextSub: { color: '#888', fontSize: 14, textAlign: 'center', lineHeight: 22 },
+  logoContainer: { width: 104, height: 104, borderRadius: 52, backgroundColor: colors.surface,
+    justifyContent: 'center', alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: colors.primaryDeep, ...shadows.card },
+  emptyTextTitle: { color: colors.text, fontSize: 19, fontWeight: '800', marginBottom: 12, textAlign: 'center', lineHeight: 26 },
+  emptyTextSub: { color: colors.textMuted, fontSize: 14, textAlign: 'center', lineHeight: 22 },
   
   // Bubbles
-  bubble: { maxWidth: '85%', padding: 14, borderRadius: 16, marginBottom: 16 },
-  userBubble: { backgroundColor: '#1b4332', alignSelf: 'flex-end',
-    borderBottomRightRadius: 4, borderWidth: 1, borderColor: '#2d6a4f' },
-  botBubble: { backgroundColor: '#161616', alignSelf: 'flex-start',
-    borderBottomLeftRadius: 4, borderWidth: 1, borderColor: '#2a2a2a' },
-  bubbleText: { color: '#fff', fontSize: 15, lineHeight: 22 },
+  bubble: { maxWidth: '85%', padding: 14, borderRadius: 18, marginBottom: 16 },
+  userBubble: { backgroundColor: colors.primarySoft, alignSelf: 'flex-end',
+    borderBottomRightRadius: 5, borderWidth: 1, borderColor: colors.primaryDeep },
+  botBubble: { backgroundColor: colors.surface, alignSelf: 'flex-start',
+    borderBottomLeftRadius: 5, borderWidth: 1, borderColor: colors.borderSoft },
+  bubbleText: { color: colors.text, fontSize: 15, lineHeight: 22 },
   
   // Bubble Attachments
   bubbleAttachmentContainer: { marginBottom: 10, borderRadius: 12, overflow: 'hidden' },
@@ -705,8 +708,8 @@ const styles = StyleSheet.create({
 
   // Attachment Preview UI
   previewContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#161616',
-    borderTopWidth: 1, borderTopColor: '#333' },
+    paddingHorizontal: 16, paddingVertical: 12, backgroundColor: colors.surface,
+    borderTopWidth: 1, borderTopColor: colors.border },
   previewContent: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   previewThumbnail: { width: 44, height: 44, borderRadius: 8, marginRight: 12 },
   previewIconContainer: { backgroundColor: '#0d0d0d', justifyContent: 'center', alignItems: 'center',
@@ -720,18 +723,18 @@ const styles = StyleSheet.create({
   deletePreviewBtn: { padding: 4 },
 
   loadingContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginVertical: 12 },
-  loadingText: { color: '#888', fontSize: 12, marginLeft: 8 },
+  loadingText: { color: colors.textMuted, fontSize: 12, marginLeft: 8 },
 
   // Input area
   inputRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10,
-    backgroundColor: '#141414', borderTopWidth: 1, borderTopColor: '#222', paddingBottom: Platform.OS === 'ios' ? 24 : 10 },
-  plusBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#222',
+    backgroundColor: 'rgba(17, 27, 23, 0.96)', borderTopWidth: 1, borderTopColor: colors.primaryDeep, paddingBottom: Platform.OS === 'ios' ? 24 : 10 },
+  plusBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surfaceHigh,
     justifyContent: 'center', alignItems: 'center', marginRight: 10 },
-  input: { flex: 1, color: '#fff', backgroundColor: '#222', borderRadius: 22,
+  input: { flex: 1, color: colors.text, backgroundColor: colors.bgSoft, borderRadius: 22,
     paddingHorizontal: 16, paddingVertical: 8, fontSize: 15, marginRight: 8, maxHeight: 100 },
-  micBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#2d6a4f',
+  micBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primaryDeep,
     justifyContent: 'center', alignItems: 'center' },
-  sendBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#52b788',
+  sendBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary,
     justifyContent: 'center', alignItems: 'center' },
 
   // Recording Active Panel
@@ -750,16 +753,16 @@ const styles = StyleSheet.create({
   drawerBackdrop: { ...StyleSheet.absoluteFillObject },
   drawerBackdropBackground: { ...StyleSheet.absoluteFillObject, backgroundColor: '#000' },
   drawerContainer: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 280,
-    backgroundColor: '#141414', borderRightWidth: 1, borderRightColor: '#222', zIndex: 100,
+    backgroundColor: colors.surface, borderRightWidth: 1, borderRightColor: colors.borderSoft, zIndex: 100,
     paddingTop: 54, flexDirection: 'column' },
   drawerHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingBottom: 20, borderBottomWidth: 1, borderBottomColor: '#222' },
-  drawerBrand: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
+    paddingHorizontal: 16, paddingBottom: 20, borderBottomWidth: 1, borderBottomColor: colors.borderSoft },
+  drawerBrand: { color: colors.text, fontSize: 20, fontWeight: '800' },
   
   drawerActions: { padding: 16, borderBottomWidth: 1, borderBottomColor: '#222' },
-  drawerActionBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1e1e1e',
+  drawerActionBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceHigh,
     paddingHorizontal: 12, paddingVertical: 12, borderRadius: 8, marginBottom: 10,
-    borderWidth: 1, borderColor: '#333' },
+    borderWidth: 1, borderColor: colors.border },
   drawerActionIcon: { marginRight: 12 },
   drawerActionText: { color: '#fff', fontSize: 14, fontWeight: 'bold' },
   drawerActionTextSecondary: { color: '#ccc', fontSize: 14 },

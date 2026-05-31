@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
+import { colors } from '../theme';
 
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
@@ -23,14 +24,14 @@ const MainTabs = () => (
   <Tab.Navigator
     screenOptions={({ route }) => ({
       tabBarStyle: { 
-        backgroundColor: '#141414', 
-        borderTopColor: '#222',
-        height: 60,
-        paddingBottom: 8,
+        backgroundColor: colors.surface, 
+        borderTopColor: colors.borderSoft,
+        height: 66,
+        paddingBottom: 10,
         paddingTop: 8,
       },
-      tabBarActiveTintColor: '#52b788',
-      tabBarInactiveTintColor: '#666666',
+      tabBarActiveTintColor: colors.primary,
+      tabBarInactiveTintColor: colors.textMuted,
       headerShown: false,
       tabBarIcon: ({ color, size }) => {
         const icons = {
@@ -72,4 +73,4 @@ export default function AppNavigator() {
       {token ? <MainStack /> : <AuthStack />}
     </NavigationContainer>
   );
-}
+}
