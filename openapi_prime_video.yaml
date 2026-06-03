@@ -1,0 +1,4874 @@
+openapi: 3.0.3
+info:
+  title: Amazon Prime Video API
+  version: 1.0.0
+  description: 'Spécification OpenAPI 3.0 exhaustive pour la plateforme Amazon Prime Video. Cette API couvre la gestion des
+    utilisateurs, du catalogue média, des abonnements, de l''historique de lecture, des recommandations, ainsi que les fonctionnalités
+    avancées telles que X-Ray, Dialogue Boost, le filtre Pur Prime et les résumés adaptatifs. Conçue selon les principes REST
+    (stateless, cacheable, layered system, uniform interface) et l''approche API-First.
+
+    '
+  contact:
+    name: Équipe API Prime Video
+    email: api-primevideo@amazon.com
+    url: https://developer.amazon.com/prime-video
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+  termsOfService: https://www.amazon.com/prime-video/terms
+servers:
+- url: https://api.primevideo.amazon.com/v1
+  description: Serveur de production
+- url: https://staging-api.primevideo.amazon.com/v1
+  description: Serveur de staging
+- url: https://dev-api.primevideo.amazon.com/v1
+  description: Serveur de développement
+tags:
+- name: Authentication
+  description: Authentification et gestion des tokens JWT/OAuth2
+- name: Users
+  description: Gestion des utilisateurs et profils (jusqu'à 6 profils par compte)
+- name: Media
+  description: Catalogue média - films, séries, épisodes et métadonnées
+- name: Subscriptions
+  description: Gestion des abonnements Prime et chaînes tierces (Channels)
+- name: Playback
+  description: Lecture, streaming adaptatif et contrôles VCR
+- name: History
+  description: Historique de visionnage et progression
+- name: Recommendations
+  description: Recommandations personnalisées par algorithmes Big Data
+- name: X-Ray
+  description: Métadonnées en temps réel (acteurs, musiques, anecdotes via IMDb)
+- name: LookAndBuy
+  description: Intégration boutique Amazon - achat d'objets vus à l'écran
+- name: DialogueBoost
+  description: Amplification vocale par IA (3 niveaux)
+- name: AdaptiveSummaries
+  description: Résumés générés par IA basés sur l'historique du profil
+- name: Watchlist
+  description: Liste de lecture personnelle
+- name: Downloads
+  description: Téléchargement hors-ligne
+- name: Reviews
+  description: Avis et notes des utilisateurs sur les contenus
+- name: Notifications
+  description: Alertes et notifications utilisateur
+- name: PaymentMethods
+  description: Gestion des moyens de paiement
+- name: Devices
+  description: Gestion des appareils connectes
+- name: SearchHistory
+  description: Historique de recherche
+- name: WatchParty
+  description: Sessions de visionnage partage Watch Party 2.0
+- name: Playlists
+  description: Playlists partagees et personnelles
+- name: Admin
+  description: Administration - Analytics, moderation, gestion catalogue
+security:
+- BearerAuth: []
+- OAuth2:
+  - read
+  - write
+paths:
+  /auth/token:
+    post:
+      tags:
+      - Authentication
+      summary: Obtenir un token d'accès JWT
+      operationId: createToken
+      description: 'Authentifie l''utilisateur et retourne un token JWT (RFC 7519) auto-contenu et stateless. Le token contient
+        les claims : sub, roles, iat, exp. Conforme au principe stateless REST : chaque requête ultérieure inclura ce token
+        via le header Authorization Bearer.
+
+        '
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRequest'
+            example:
+              email: user@example.com
+              password: SecurePass123!
+      responses:
+        '200':
+          description: Authentification réussie - token JWT généré
+          headers:
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+              description: Nombre de requêtes autorisées par heure
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+              description: Nombre de requêtes restantes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /auth/refresh:
+    post:
+      tags:
+      - Authentication
+      summary: Rafraîchir un token JWT expiré
+      operationId: refreshToken
+      description: 'Génère un nouveau access_token à partir d''un refresh_token valide. Permet de maintenir la session sans
+        re-authentification.
+
+        '
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+                  description: Token de rafraîchissement
+      responses:
+        '200':
+          description: Nouveau token généré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /users:
+    get:
+      tags:
+      - Users
+      summary: Récupérer la liste des utilisateurs
+      operationId: getUsers
+      description: 'Retourne une collection paginée d''utilisateurs. Supporte le filtrage, le tri et la pagination (query
+        parameters). Méthode GET safe et idempotente. Réponse cacheable avec Cache-Control.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/LimitParam'
+      - $ref: '#/components/parameters/SortParam'
+      - name: is_active
+        in: query
+        schema:
+          type: boolean
+        description: Filtrer par statut actif/inactif
+      responses:
+        '200':
+          description: Liste paginée des utilisateurs récupérée avec succès
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: private, max-age=300
+            X-Total-Count:
+              schema:
+                type: integer
+              description: Nombre total d'utilisateurs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags:
+      - Users
+      summary: Créer un nouvel utilisateur
+      operationId: createUser
+      description: 'Crée un nouveau compte utilisateur. POST n''est ni safe ni idempotent. Le serveur génère l''URI de la
+        ressource (header Location). Le mot de passe est hashé côté serveur. Retourne 201 Created.
+
+        '
+      requestBody:
+        required: true
+        description: Données du nouvel utilisateur à créer
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+            examples:
+              basique:
+                summary: Utilisateur basique
+                value:
+                  email: newuser@example.com
+                  username: newuser123
+                  password: SecurePass123!
+              avec_profils:
+                summary: Utilisateur avec profils jeunesse
+                value:
+                  email: famille@example.com
+                  username: famille_dupont
+                  password: FamillePass456!
+                  subscription_plan: PRIME_ANNUAL
+      responses:
+        '201':
+          description: Utilisateur créé avec succès
+          headers:
+            Location:
+              schema:
+                type: string
+                example: /v1/users/12345
+              description: URI de la ressource créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          description: Conflit - email ou username déjà existant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation métier échouée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /users/{userId}:
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      description: Identifiant unique de l'utilisateur
+      schema:
+        type: integer
+        format: int64
+    get:
+      tags:
+      - Users
+      summary: Récupérer un utilisateur par ID
+      operationId: getUserById
+      description: 'Retourne la représentation JSON d''un utilisateur spécifique. GET est safe et idempotent. Supporte les
+        requêtes conditionnelles (If-None-Match / ETag) pour optimiser le cache.
+
+        '
+      responses:
+        '200':
+          description: Utilisateur trouvé et retourné
+          headers:
+            ETag:
+              schema:
+                type: string
+            Cache-Control:
+              schema:
+                type: string
+                example: private, max-age=600
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '304':
+          description: Ressource non modifiée (cache conditionnel)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      tags:
+      - Users
+      summary: Remplacer complètement un utilisateur
+      operationId: updateUser
+      description: 'Remplacement complet de la ressource utilisateur (PUT idempotent). Tous les champs doivent être fournis.
+        Les champs omis seront réinitialisés.
+
+        '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: Utilisateur mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    patch:
+      tags:
+      - Users
+      summary: Modifier partiellement un utilisateur
+      operationId: patchUser
+      description: 'Modification partielle (PATCH non idempotent). Seuls les champs fournis sont modifiés, les autres restent
+        inchangés.
+
+        '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPatch'
+      responses:
+        '200':
+          description: Utilisateur partiellement mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags:
+      - Users
+      summary: Supprimer un utilisateur
+      operationId: deleteUser
+      description: 'Suppression d''un utilisateur. DELETE est idempotent : plusieurs appels identiques produisent le même
+        résultat.
+
+        '
+      responses:
+        '204':
+          description: Utilisateur supprimé avec succès (aucun contenu)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /users/{userId}/profiles:
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    get:
+      tags:
+      - Users
+      summary: Lister les profils d'un utilisateur
+      operationId: getUserProfiles
+      description: 'Retourne les profils associés (max 6 dont profils Jeunesse). Sous-ressource REST : /users/{id}/profiles.
+
+        '
+      responses:
+        '200':
+          description: Liste des profils
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Profile'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags:
+      - Users
+      summary: Créer un nouveau profil
+      operationId: createProfile
+      description: Crée un profil (standard ou Jeunesse) pour l'utilisateur. Maximum 6 profils.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileCreate'
+      responses:
+        '201':
+          description: Profil créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          description: Limite de 6 profils atteinte
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /media:
+    get:
+      tags:
+      - Media
+      summary: Rechercher et lister le catalogue média
+      operationId: getMedia
+      description: 'Retourne le catalogue média paginé avec filtrage avancé. Supporte le filtre Pur Prime (is_prime_inclusive)
+        pour masquer le contenu transactionnel TVOD. Cacheable (public, max-age=3600).
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/LimitParam'
+      - $ref: '#/components/parameters/SortParam'
+      - name: type
+        in: query
+        schema:
+          type: string
+          enum:
+          - movie
+          - series
+          - documentary
+          - live_event
+          - short
+        description: Type de contenu
+      - name: genre
+        in: query
+        schema:
+          type: string
+          enum:
+          - action
+          - comedy
+          - drama
+          - horror
+          - sci_fi
+          - thriller
+          - romance
+          - animation
+          - documentary
+        description: Genre du contenu
+      - name: is_prime_inclusive
+        in: query
+        schema:
+          type: boolean
+          default: false
+        description: 'Filtre Pur Prime - Si true, retourne uniquement le contenu inclus avec l''abonnement Prime (SVOD), masquant
+          le contenu nécessitant un paiement supplémentaire (TVOD/Channels).
+
+          '
+      - name: min_rating
+        in: query
+        schema:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 10
+        description: Note IMDb minimale
+      - name: release_year
+        in: query
+        schema:
+          type: integer
+          format: int32
+        description: Année de sortie
+      - name: language
+        in: query
+        schema:
+          type: string
+          example: fr
+        description: Langue audio disponible (code ISO 639-1)
+      - name: quality
+        in: query
+        schema:
+          type: string
+          enum:
+          - SD
+          - HD
+          - FHD
+          - UHD_4K
+        description: Qualité vidéo minimale
+      - name: has_audio_description
+        in: query
+        schema:
+          type: boolean
+        description: Filtrer les contenus avec audio description (AD)
+      - name: q
+        in: query
+        schema:
+          type: string
+          minLength: 2
+        description: Recherche textuelle par titre, acteur ou réalisateur
+      responses:
+        '200':
+          description: Catalogue média paginé
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: public, max-age=3600
+            ETag:
+              schema:
+                type: string
+            X-Total-Count:
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaListResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /media/{mediaId}:
+    parameters:
+    - name: mediaId
+      in: path
+      required: true
+      description: Identifiant unique du contenu média
+      schema:
+        type: string
+        format: uuid
+    get:
+      tags:
+      - Media
+      summary: Récupérer les détails d'un contenu média
+      operationId: getMediaById
+      description: 'Retourne la fiche complète d''un film ou série avec métadonnées enrichies (titre, synopsis, acteurs, durée,
+        badges qualité HDR/UHD/AD/5.1, disponibilité SVOD/TVOD, liens HATEOAS vers sous-ressources).
+
+        '
+      responses:
+        '200':
+          description: Détails du média
+          headers:
+            ETag:
+              schema:
+                type: string
+            Cache-Control:
+              schema:
+                type: string
+                example: public, max-age=1800
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Media'
+        '304':
+          description: Non modifié (cache conditionnel ETag)
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /media/{mediaId}/seasons:
+    parameters:
+    - name: mediaId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      tags:
+      - Media
+      summary: Lister les saisons d'une série
+      operationId: getSeasons
+      description: Retourne les saisons d'une série. Applicable uniquement aux médias de type 'series'.
+      responses:
+        '200':
+          description: Liste des saisons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Season'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /media/{mediaId}/seasons/{seasonNumber}/episodes:
+    parameters:
+    - name: mediaId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    - name: seasonNumber
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    get:
+      tags:
+      - Media
+      summary: Lister les épisodes d'une saison
+      operationId: getEpisodes
+      description: Retourne les épisodes d'une saison donnée avec durée et progression.
+      responses:
+        '200':
+          description: Liste des épisodes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Episode'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /media/{mediaId}/xray:
+    parameters:
+    - name: mediaId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      tags:
+      - X-Ray
+      summary: Récupérer les métadonnées X-Ray d'un contenu
+      operationId: getXRayData
+      description: 'Retourne les données X-Ray propulsées par IMDb : identification en temps réel des acteurs, musiques, personnages
+        et anecdotes. Paramètre optionnel timestamp_sec pour cibler une scène précise.
+
+        '
+      parameters:
+      - name: timestamp_sec
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+        description: Position en secondes pour les données contextuelles de scène
+      responses:
+        '200':
+          description: Données X-Ray du contenu
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: public, max-age=86400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/XRayData'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /media/{mediaId}/xray/scenes/{sceneId}/products:
+    parameters:
+    - name: mediaId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    - name: sceneId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      tags:
+      - LookAndBuy
+      summary: Obtenir les produits achetables d'une scène (Look & Buy)
+      operationId: getLookAndBuyProducts
+      description: 'Intégration X-Ray Interactive (Look & Buy) avec le magasin Amazon. Retourne les vêtements, accessoires
+        et objets identifiés dans une scène spécifique, avec liens d''achat Amazon en un clic.
+
+        '
+      parameters:
+      - name: category
+        in: query
+        schema:
+          type: string
+          enum:
+          - clothing
+          - accessories
+          - furniture
+          - electronics
+          - all
+        description: Catégorie de produit
+      responses:
+        '200':
+          description: Produits achetables identifiés dans la scène
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  scene_id:
+                    type: string
+                    format: uuid
+                  timestamp_range:
+                    $ref: '#/components/schemas/TimestampRange'
+                  products:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LookAndBuyProduct'
+                  _links:
+                    $ref: '#/components/schemas/HATEOASLinks'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /subscriptions:
+    get:
+      tags:
+      - Subscriptions
+      summary: Lister les plans d'abonnement disponibles
+      operationId: getSubscriptionPlans
+      description: 'Retourne tous les plans disponibles : Prime Monthly, Prime Annual, et les Chaînes tierces (Channels).
+        Ressource publique cacheable.
+
+        '
+      security: []
+      responses:
+        '200':
+          description: Liste des plans d'abonnement
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: public, max-age=86400
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubscriptionPlan'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /users/{userId}/subscriptions:
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    get:
+      tags:
+      - Subscriptions
+      summary: Récupérer les abonnements actifs d'un utilisateur
+      operationId: getUserSubscriptions
+      description: Retourne les abonnements actifs (Prime + Channels).
+      responses:
+        '200':
+          description: Abonnements de l'utilisateur
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserSubscription'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags:
+      - Subscriptions
+      summary: Souscrire à un abonnement
+      operationId: createSubscription
+      description: Active un nouvel abonnement Prime ou Channel pour l'utilisateur.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscriptionCreate'
+      responses:
+        '201':
+          description: Abonnement créé avec succès
+          headers:
+            Location:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSubscription'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          description: Abonnement déjà actif
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /users/{userId}/subscriptions/{subscriptionId}:
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    - name: subscriptionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    delete:
+      tags:
+      - Subscriptions
+      summary: Résilier un abonnement
+      operationId: cancelSubscription
+      description: Résilie un abonnement. L'accès reste actif jusqu'à la fin de la période payée.
+      responses:
+        '204':
+          description: Abonnement résilié
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /playback/{mediaId}/stream:
+    parameters:
+    - name: mediaId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      tags:
+      - Playback
+      summary: Obtenir l'URL de streaming adaptatif
+      operationId: getStreamUrl
+      description: 'Retourne les URLs de streaming HLS/DASH avec DRM. Le client utilise l''ABR (Adaptive Bitrate) pour demander
+        dynamiquement le segment dans la qualité la plus haute supportée par le réseau. Supporte le Dialogue Boost via header
+        optionnel.
+
+        '
+      parameters:
+      - name: quality
+        in: query
+        schema:
+          type: string
+          enum:
+          - auto
+          - SD
+          - HD
+          - FHD
+          - UHD_4K
+          default: auto
+        description: Qualité souhaitée (auto = ABR adaptatif)
+      - name: audio_language
+        in: query
+        schema:
+          type: string
+          example: fr
+        description: Langue audio (ISO 639-1)
+      - name: subtitle_language
+        in: query
+        schema:
+          type: string
+          example: en
+        description: Langue des sous-titres
+      - name: X-Dialogue-Boost-Level
+        in: header
+        required: false
+        schema:
+          type: string
+          enum:
+          - 'off'
+          - low
+          - medium
+          - high
+          default: 'off'
+        description: 'Dialogue Boost - Niveau d''amplification des voix par IA. 3 niveaux : low, medium, high pour une meilleure
+          clarté sonore.
+
+          '
+      - name: resume_from_sec
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+        description: Reprendre la lecture à cette position (en secondes)
+      responses:
+        '200':
+          description: Informations de streaming
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StreamInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Contenu non accessible avec l'abonnement actuel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /playback/{mediaId}/progress:
+    parameters:
+    - name: mediaId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    put:
+      tags:
+      - Playback
+      summary: Mettre à jour la progression de lecture
+      operationId: updatePlaybackProgress
+      description: 'Sauvegarde la position de lecture actuelle (PUT idempotent). Permet de reprendre la lecture sur n''importe
+        quel appareil.
+
+        '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - progress_sec
+              - profile_id
+              properties:
+                profile_id:
+                  type: string
+                  format: uuid
+                progress_sec:
+                  type: integer
+                  minimum: 0
+                  description: Position en secondes
+                total_duration_sec:
+                  type: integer
+                is_completed:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: Progression mise à jour
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /users/{userId}/profiles/{profileId}/history:
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    - name: profileId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      tags:
+      - History
+      summary: Récupérer l'historique de visionnage d'un profil
+      operationId: getWatchHistory
+      description: 'Retourne l''historique paginé avec progression pour chaque contenu. Sous-ressource hiérarchique : /users/{id}/profiles/{id}/history.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/LimitParam'
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - in_progress
+          - completed
+          - all
+          default: all
+      responses:
+        '200':
+          description: Historique de visionnage paginé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WatchHistoryResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags:
+      - History
+      summary: Effacer l'historique de visionnage
+      operationId: clearWatchHistory
+      description: 'Efface l''historique pour réinitialiser les recommandations. DELETE idempotent.
+
+        '
+      responses:
+        '204':
+          description: Historique effacé
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /users/{userId}/profiles/{profileId}/recommendations:
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    - name: profileId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      tags:
+      - Recommendations
+      summary: Obtenir les recommandations personnalisées
+      operationId: getRecommendations
+      description: 'Retourne des recommandations générées par le moteur Big Data basées sur l''historique, les tendances nationales
+        et les thématiques saisonnières. Organisées en carrousels thématiques.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/LimitParam'
+      - name: is_prime_inclusive
+        in: query
+        schema:
+          type: boolean
+          default: false
+        description: Filtre Pur Prime - uniquement contenu inclus Prime
+      - name: mood
+        in: query
+        schema:
+          type: string
+        description: 'Recherche par humeur - langage naturel (ex: "film qui fait réfléchir sans violence")
+
+          '
+      responses:
+        '200':
+          description: Recommandations personnalisées
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: private, max-age=300
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecommendationResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /media/{mediaId}/adaptive-summary:
+    parameters:
+    - name: mediaId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      tags:
+      - AdaptiveSummaries
+      summary: Générer un résumé adaptatif par IA
+      operationId: getAdaptiveSummary
+      description: 'Service d''IA générant un récapitulatif textuel ou vidéo des saisons précédentes basé sur les épisodes
+        réellement vus par le profil, évitant tout spoil. Retourne 202 Accepted si la génération est asynchrone.
+
+        '
+      parameters:
+      - name: profile_id
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: Profil pour personnaliser le résumé
+      - name: format
+        in: query
+        schema:
+          type: string
+          enum:
+          - text
+          - video
+          - audio
+          default: text
+        description: Format du résumé
+      - name: season_number
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+        description: Numéro de saison à résumer (par défaut la dernière vue)
+      - name: max_length_sec
+        in: query
+        schema:
+          type: integer
+          default: 120
+        description: Durée max du résumé vidéo/audio en secondes
+      responses:
+        '200':
+          description: Résumé adaptatif généré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdaptiveSummary'
+        '202':
+          description: Résumé en cours de génération (traitement asynchrone)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: processing
+                  estimated_completion_sec:
+                    type: integer
+                    example: 30
+                  poll_url:
+                    type: string
+                    example: /v1/media/{mediaId}/adaptive-summary/status/abc123
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /users/{userId}/profiles/{profileId}/watchlist:
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    - name: profileId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      tags:
+      - Watchlist
+      summary: Récupérer la liste de lecture
+      operationId: getWatchlist
+      description: Retourne la watchlist paginée du profil.
+      parameters:
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Watchlist du profil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WatchlistResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags:
+      - Watchlist
+      summary: Ajouter un contenu à la watchlist
+      operationId: addToWatchlist
+      description: Ajoute un média à la liste de lecture du profil.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - media_id
+              properties:
+                media_id:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Contenu ajouté à la watchlist
+        '409':
+          description: Contenu déjà dans la watchlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /users/{userId}/profiles/{profileId}/watchlist/{mediaId}:
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    - name: profileId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    - name: mediaId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    delete:
+      tags:
+      - Watchlist
+      summary: Retirer un contenu de la watchlist
+      operationId: removeFromWatchlist
+      description: Supprime un média de la watchlist. DELETE idempotent.
+      responses:
+        '204':
+          description: Contenu retiré
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /users/{userId}/downloads:
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    get:
+      tags:
+      - Downloads
+      summary: Lister les contenus téléchargés
+      operationId: getDownloads
+      description: Retourne les contenus disponibles hors-ligne pour l'utilisateur.
+      responses:
+        '200':
+          description: Liste des téléchargements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Download'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags:
+      - Downloads
+      summary: Initier un téléchargement hors-ligne
+      operationId: createDownload
+      description: 'Initie le téléchargement d''un contenu pour visionnage hors-ligne. Choix de qualité : Économe, Standard,
+        Optimale.
+
+        '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - media_id
+              - quality
+              properties:
+                media_id:
+                  type: string
+                  format: uuid
+                quality:
+                  type: string
+                  enum:
+                  - economical
+                  - standard
+                  - optimal
+                  default: standard
+                storage:
+                  type: string
+                  enum:
+                  - internal
+                  - sd_card
+                  default: internal
+      responses:
+        '202':
+          description: Téléchargement initié (asynchrone)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Download'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          description: Contenu non téléchargeable avec l'abonnement actuel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /media/{mediaId}/reviews:
+    parameters:
+    - name: mediaId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      tags:
+      - Reviews
+      summary: Lister les avis d'un contenu média
+      operationId: getMediaReviews
+      description: 'Retourne les avis et notes des utilisateurs pour un contenu. GET safe et idempotent. Réponse cacheable
+        (public, max-age=300). Supporte la pagination et le tri (pertinence, date, note).
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/LimitParam'
+      - name: sort
+        in: query
+        schema:
+          type: string
+          enum:
+          - relevance
+          - date_desc
+          - date_asc
+          - rating_desc
+          - rating_asc
+          default: relevance
+      responses:
+        '200':
+          description: Liste paginée des avis
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: public, max-age=300
+            X-Total-Count:
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewListResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags:
+      - Reviews
+      summary: Publier un avis sur un contenu
+      operationId: createReview
+      description: 'Crée un nouvel avis (POST non idempotent). Un utilisateur ne peut publier qu''un seul avis par contenu
+        (409 Conflict si déjà existant). Retourne 201 Created avec header Location.
+
+        '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewCreate'
+      responses:
+        '201':
+          description: Avis publié avec succès
+          headers:
+            Location:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          description: Un avis existe déjà pour cet utilisateur sur ce contenu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /media/{mediaId}/reviews/{reviewId}:
+    parameters:
+    - name: mediaId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    - name: reviewId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    put:
+      tags:
+      - Reviews
+      summary: Modifier son avis
+      operationId: updateReview
+      description: Remplacement complet de l'avis (PUT idempotent). Seul l'auteur peut modifier.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewCreate'
+      responses:
+        '200':
+          description: Avis mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags:
+      - Reviews
+      summary: Supprimer son avis
+      operationId: deleteReview
+      description: Supprime l'avis (DELETE idempotent). Seul l'auteur ou un admin peut supprimer.
+      responses:
+        '204':
+          description: Avis supprimé
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /users/{userId}/notifications:
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    get:
+      tags:
+      - Notifications
+      summary: Récupérer les notifications de l'utilisateur
+      operationId: getUserNotifications
+      description: 'Retourne les notifications paginées (nouvelles sorties, reprises de séries, promotions, alertes système).
+        Filtrable par statut lu/non-lu.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/LimitParam'
+      - name: is_read
+        in: query
+        schema:
+          type: boolean
+        description: Filtrer par statut lu/non-lu
+      - name: type
+        in: query
+        schema:
+          type: string
+          enum:
+          - new_release
+          - continue_watching
+          - recommendation
+          - promotion
+          - system
+          - watchparty
+      responses:
+        '200':
+          description: Notifications paginées
+          headers:
+            X-Unread-Count:
+              schema:
+                type: integer
+              description: Nombre de notifications non lues
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /users/{userId}/notifications/{notificationId}/read:
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    - name: notificationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    put:
+      tags:
+      - Notifications
+      summary: Marquer une notification comme lue
+      operationId: markNotificationRead
+      description: PUT idempotent — marquer comme lu plusieurs fois produit le même résultat.
+      responses:
+        '200':
+          description: Notification marquée comme lue
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /users/{userId}/notifications/read-all:
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    put:
+      tags:
+      - Notifications
+      summary: Marquer toutes les notifications comme lues
+      operationId: markAllNotificationsRead
+      description: PUT idempotent — marque toutes les notifications comme lues.
+      responses:
+        '200':
+          description: Toutes les notifications marquées comme lues
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /users/{userId}/payment-methods:
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    get:
+      tags:
+      - PaymentMethods
+      summary: Lister les moyens de paiement
+      operationId: getPaymentMethods
+      description: 'Retourne les moyens de paiement enregistrés. Les données sensibles (numéro complet) ne sont jamais exposées
+        — seuls les 4 derniers chiffres. Cache-Control: no-store (données sensibles).
+
+        '
+      responses:
+        '200':
+          description: Liste des moyens de paiement
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentMethod'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags:
+      - PaymentMethods
+      summary: Ajouter un moyen de paiement
+      operationId: addPaymentMethod
+      description: Enregistre une nouvelle carte ou méthode de paiement.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentMethodCreate'
+      responses:
+        '201':
+          description: Moyen de paiement ajouté
+          headers:
+            Location:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethod'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /users/{userId}/payment-methods/{paymentMethodId}:
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    - name: paymentMethodId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    delete:
+      tags:
+      - PaymentMethods
+      summary: Supprimer un moyen de paiement
+      operationId: deletePaymentMethod
+      description: Supprime un moyen de paiement (DELETE idempotent).
+      responses:
+        '204':
+          description: Moyen de paiement supprimé
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /users/{userId}/devices:
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    get:
+      tags:
+      - Devices
+      summary: Lister les appareils connectés
+      operationId: getUserDevices
+      description: 'Retourne les appareils autorisés (TV, mobile, tablette, navigateur). Permet de gérer les sessions actives
+        et le streaming simultané.
+
+        '
+      responses:
+        '200':
+          description: Liste des appareils
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Device'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags:
+      - Devices
+      summary: Enregistrer un nouvel appareil
+      operationId: registerDevice
+      description: Enregistre un appareil pour le streaming. Limite selon l'abonnement.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceRegister'
+      responses:
+        '201':
+          description: Appareil enregistré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '409':
+          description: Limite d'appareils atteinte
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /users/{userId}/devices/{deviceId}:
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    - name: deviceId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    delete:
+      tags:
+      - Devices
+      summary: Déconnecter un appareil
+      operationId: removeDevice
+      description: Révoque l'accès d'un appareil (DELETE idempotent).
+      responses:
+        '204':
+          description: Appareil déconnecté
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /users/{userId}/search-history:
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    get:
+      tags:
+      - SearchHistory
+      summary: Récupérer l'historique de recherche
+      operationId: getSearchHistory
+      description: Retourne les recherches passées de l'utilisateur, paginées et triées par date.
+      parameters:
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Historique de recherche
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchHistoryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags:
+      - SearchHistory
+      summary: Effacer l'historique de recherche
+      operationId: clearSearchHistory
+      description: Supprime tout l'historique de recherche (DELETE idempotent).
+      responses:
+        '204':
+          description: Historique effacé
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /watch-parties:
+    post:
+      tags:
+      - WatchParty
+      summary: Créer une session Watch Party
+      operationId: createWatchParty
+      description: 'Crée une session de visionnage partagé (Watch Party 2.0). Intégration de réactions en direct et synchronisation
+        multi-écrans. Retourne un code d''invitation à partager.
+
+        '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WatchPartyCreate'
+      responses:
+        '201':
+          description: Watch Party créée
+          headers:
+            Location:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WatchParty'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          description: Contenu non éligible au Watch Party
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /watch-parties/{partyId}:
+    parameters:
+    - name: partyId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      tags:
+      - WatchParty
+      summary: Récupérer les détails d'une Watch Party
+      operationId: getWatchParty
+      description: Retourne les infos de la session (participants, statut, média en cours).
+      responses:
+        '200':
+          description: Détails de la Watch Party
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WatchParty'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags:
+      - WatchParty
+      summary: Terminer une Watch Party
+      operationId: endWatchParty
+      description: Termine la session (seul l'hôte peut terminer).
+      responses:
+        '204':
+          description: Watch Party terminée
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /watch-parties/{partyId}/join:
+    parameters:
+    - name: partyId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    post:
+      tags:
+      - WatchParty
+      summary: Rejoindre une Watch Party
+      operationId: joinWatchParty
+      description: Rejoint une session active via le code d'invitation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - invite_code
+              properties:
+                invite_code:
+                  type: string
+                  minLength: 6
+                  maxLength: 8
+      responses:
+        '200':
+          description: Rejoint avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WatchParty'
+        '404':
+          description: Session introuvable ou expirée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Session pleine
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /playlists:
+    get:
+      tags:
+      - Playlists
+      summary: Lister les playlists publiques
+      operationId: getPublicPlaylists
+      description: Retourne les playlists publiques populaires. Cacheable (public).
+      parameters:
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Playlists publiques
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: public, max-age=600
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaylistListResponse'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags:
+      - Playlists
+      summary: Créer une playlist
+      operationId: createPlaylist
+      description: Crée une playlist personnelle (privée par défaut, partageable).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaylistCreate'
+      responses:
+        '201':
+          description: Playlist créée
+          headers:
+            Location:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Playlist'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /playlists/{playlistId}:
+    parameters:
+    - name: playlistId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      tags:
+      - Playlists
+      summary: Récupérer une playlist
+      operationId: getPlaylist
+      description: Retourne le contenu d'une playlist (publique ou privée si propriétaire).
+      responses:
+        '200':
+          description: Détails de la playlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Playlist'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      tags:
+      - Playlists
+      summary: Modifier une playlist
+      operationId: updatePlaylist
+      description: Mise à jour complète (PUT idempotent). Seul le propriétaire peut modifier.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaylistCreate'
+      responses:
+        '200':
+          description: Playlist mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Playlist'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags:
+      - Playlists
+      summary: Supprimer une playlist
+      operationId: deletePlaylist
+      description: Supprime la playlist (DELETE idempotent).
+      responses:
+        '204':
+          description: Playlist supprimée
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /playlists/{playlistId}/items:
+    parameters:
+    - name: playlistId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    post:
+      tags:
+      - Playlists
+      summary: Ajouter un contenu à une playlist
+      operationId: addToPlaylist
+      description: Ajoute un média à la playlist.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - media_id
+              properties:
+                media_id:
+                  type: string
+                  format: uuid
+                position:
+                  type: integer
+                  description: Position dans la playlist (optionnel)
+      responses:
+        '201':
+          description: Contenu ajouté
+        '409':
+          description: Contenu déjà dans la playlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /playlists/{playlistId}/share:
+    parameters:
+    - name: playlistId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    post:
+      tags:
+      - Playlists
+      summary: Partager une playlist
+      operationId: sharePlaylist
+      description: Génère un lien de partage public pour la playlist.
+      responses:
+        '200':
+          description: Lien de partage généré
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  share_url:
+                    type: string
+                    format: uri
+                  expires_at:
+                    type: string
+                    format: date-time
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /users/{userId}/profiles/{profileId}/continue-watching:
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    - name: profileId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      tags:
+      - History
+      summary: Récupérer les contenus en cours de visionnage
+      operationId: getContinueWatching
+      description: 'Carrousel "Continuer à regarder". Retourne les contenus en cours (non terminés) triés par dernière date
+        de visionnage.
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Contenus en cours
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: private, max-age=60
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WatchHistoryEntry'
+                  _links:
+                    $ref: '#/components/schemas/HATEOASLinks'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /users/{userId}/pin:
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    put:
+      tags:
+      - Users
+      summary: Configurer ou modifier le code PIN
+      operationId: updatePin
+      description: 'Configure le PIN parental ou d''achat (PUT idempotent). Le PIN verrouille l''accès aux contenus adultes
+        et aux achats.
+
+        '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - pin
+              - scope
+              properties:
+                pin:
+                  type: string
+                  minLength: 4
+                  maxLength: 4
+                  pattern: ^\d{4}$
+                scope:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                    - purchases
+                    - adult_content
+                    - all
+      responses:
+        '200':
+          description: PIN configuré
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags:
+      - Users
+      summary: Désactiver le code PIN
+      operationId: removePin
+      description: Supprime le PIN (DELETE idempotent).
+      responses:
+        '204':
+          description: PIN désactivé
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /users/{userId}/profiles/{profileId}/preferences:
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    - name: profileId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      tags:
+      - Users
+      summary: Récupérer les préférences d'un profil
+      operationId: getProfilePreferences
+      description: Retourne les préférences (langue, qualité, autoplay, data saver).
+      responses:
+        '200':
+          description: Préférences du profil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferences'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      tags:
+      - Users
+      summary: Mettre à jour les préférences
+      operationId: updateProfilePreferences
+      description: Remplacement complet des préférences (PUT idempotent).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPreferences'
+      responses:
+        '200':
+          description: Préférences mises à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferences'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /admin/analytics/overview:
+    get:
+      tags:
+      - Admin
+      summary: Tableau de bord analytique global
+      operationId: getAnalyticsOverview
+      description: 'Retourne les KPIs globaux : utilisateurs actifs, vues totales, revenus, taux de rétention. Accès restreint
+        aux rôles admin (403 sinon). Cache-Control: private, max-age=300.
+
+        '
+      parameters:
+      - name: period
+        in: query
+        schema:
+          type: string
+          enum:
+          - today
+          - week
+          - month
+          - quarter
+          - year
+          default: month
+        description: Période d'analyse
+      responses:
+        '200':
+          description: Données analytiques
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: private, max-age=300
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsOverview'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /admin/analytics/views:
+    get:
+      tags:
+      - Admin
+      summary: Statistiques de vues par contenu
+      operationId: getViewsAnalytics
+      description: Retourne les statistiques de visionnage par contenu, triées par popularité.
+      parameters:
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/LimitParam'
+      - name: period
+        in: query
+        schema:
+          type: string
+          enum:
+          - today
+          - week
+          - month
+          - quarter
+          - year
+          default: month
+      - name: type
+        in: query
+        schema:
+          type: string
+          enum:
+          - movie
+          - series
+          - documentary
+          - live_event
+      responses:
+        '200':
+          description: Statistiques de vues
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViewsAnalyticsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /admin/analytics/revenue:
+    get:
+      tags:
+      - Admin
+      summary: Statistiques de revenus
+      operationId: getRevenueAnalytics
+      description: 'Revenus par source : abonnements Prime, TVOD (achats/locations), Channels. Cacheable privé.
+
+        '
+      parameters:
+      - name: period
+        in: query
+        schema:
+          type: string
+          enum:
+          - today
+          - week
+          - month
+          - quarter
+          - year
+          default: month
+      - name: source
+        in: query
+        schema:
+          type: string
+          enum:
+          - subscriptions
+          - tvod
+          - channels
+          - all
+          default: all
+      responses:
+        '200':
+          description: Données de revenus
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevenueAnalytics'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /admin/analytics/trending:
+    get:
+      tags:
+      - Admin
+      summary: Contenus tendance en temps réel
+      operationId: getTrendingContent
+      description: Top contenus en temps réel par nombre de vues et engagement.
+      parameters:
+      - $ref: '#/components/parameters/LimitParam'
+      - name: region
+        in: query
+        schema:
+          type: string
+          example: FR
+        description: Code pays ISO 3166-1
+      responses:
+        '200':
+          description: Contenus tendance
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: private, max-age=60
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  trending:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TrendingItem'
+                  updated_at:
+                    type: string
+                    format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /admin/media:
+    post:
+      tags:
+      - Admin
+      summary: Ajouter un nouveau contenu au catalogue
+      operationId: adminCreateMedia
+      description: 'Crée un nouveau film/série dans le catalogue (POST non idempotent). Déclenche le pipeline de traitement
+        vidéo (ingestion S3, transcodage, segmentation HLS/DASH, packaging DRM). Retourne 201 Created.
+
+        '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaCreate'
+      responses:
+        '201':
+          description: Contenu créé et pipeline de traitement lancé
+          headers:
+            Location:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Media'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Contenu déjà existant (titre/année identiques)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /admin/media/{mediaId}:
+    parameters:
+    - name: mediaId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    put:
+      tags:
+      - Admin
+      summary: Modifier un contenu du catalogue
+      operationId: adminUpdateMedia
+      description: Remplacement complet des métadonnées (PUT idempotent).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaCreate'
+      responses:
+        '200':
+          description: Contenu mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Media'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    patch:
+      tags:
+      - Admin
+      summary: Modifier partiellement un contenu
+      operationId: adminPatchMedia
+      description: Modification partielle (PATCH). Ex. mettre à jour le synopsis ou le prix.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaPatch'
+      responses:
+        '200':
+          description: Contenu partiellement mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Media'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags:
+      - Admin
+      summary: Retirer un contenu du catalogue
+      operationId: adminDeleteMedia
+      description: Supprime un contenu (DELETE idempotent). Le fichier source S3 est archivé.
+      responses:
+        '204':
+          description: Contenu retiré du catalogue
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /admin/users/{userId}/status:
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    patch:
+      tags:
+      - Admin
+      summary: Modifier le statut d'un utilisateur (suspendre, bannir)
+      operationId: adminUpdateUserStatus
+      description: 'Permet de suspendre ou bannir un utilisateur (PATCH modification partielle). Principe du moindre privilège
+        : seul un admin peut effectuer cette action.
+
+        '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - status
+              properties:
+                status:
+                  type: string
+                  enum:
+                  - active
+                  - suspended
+                  - banned
+                reason:
+                  type: string
+                  maxLength: 500
+                  description: Motif de la suspension/bannissement
+                duration_days:
+                  type: integer
+                  minimum: 1
+                  description: Durée de suspension en jours (null = permanent)
+      responses:
+        '200':
+          description: Statut mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /admin/users/{userId}/roles:
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    put:
+      tags:
+      - Admin
+      summary: Modifier les rôles d'un utilisateur
+      operationId: adminUpdateUserRoles
+      description: Attribue des rôles (PUT idempotent). Principe du moindre privilège.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - roles
+              properties:
+                roles:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                    - user
+                    - moderator
+                    - content_manager
+                    - admin
+                    - super_admin
+      responses:
+        '200':
+          description: Rôles mis à jour
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /admin/reviews/reported:
+    get:
+      tags:
+      - Admin
+      summary: Lister les avis signalés
+      operationId: getReportedReviews
+      description: Retourne les avis signalés par les utilisateurs, en attente de modération.
+      parameters:
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/LimitParam'
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - pending
+          - approved
+          - rejected
+          default: pending
+      responses:
+        '200':
+          description: Avis signalés paginés
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /admin/reviews/{reviewId}/moderate:
+    parameters:
+    - name: reviewId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    patch:
+      tags:
+      - Admin
+      summary: Modérer un avis signalé
+      operationId: moderateReview
+      description: Approuver ou rejeter un avis signalé (PATCH).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - decision
+              properties:
+                decision:
+                  type: string
+                  enum:
+                  - approved
+                  - rejected
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Avis modéré
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /admin/audit-logs:
+    get:
+      tags:
+      - Admin
+      summary: Consulter les journaux d'audit
+      operationId: getAuditLogs
+      description: 'Traçabilité complète des actions administratives (qui, quoi, quand). Conforme au principe de sécurité
+        : logger les accès et surveiller les comportements suspects. Cache-Control: no-store (données sensibles).
+
+        '
+      parameters:
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/LimitParam'
+      - name: action
+        in: query
+        schema:
+          type: string
+          enum:
+          - user_banned
+          - user_suspended
+          - media_created
+          - media_deleted
+          - review_moderated
+          - role_changed
+          - settings_changed
+      - name: admin_id
+        in: query
+        schema:
+          type: integer
+          format: int64
+        description: Filtrer par administrateur
+      - name: from_date
+        in: query
+        schema:
+          type: string
+          format: date-time
+      - name: to_date
+        in: query
+        schema:
+          type: string
+          format: date-time
+      responses:
+        '200':
+          description: Logs d'audit paginés
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /admin/notifications/broadcast:
+    post:
+      tags:
+      - Admin
+      summary: Envoyer une notification de masse
+      operationId: broadcastNotification
+      description: 'Envoie une notification ciblée (tous les utilisateurs, par région, par plan d''abonnement). Retourne 202
+        Accepted (traitement asynchrone).
+
+        '
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BroadcastNotification'
+      responses:
+        '202':
+          description: Notification en cours d'envoi (asynchrone)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  broadcast_id:
+                    type: string
+                    format: uuid
+                  estimated_recipients:
+                    type: integer
+                  status:
+                    type: string
+                    example: sending
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /admin/genres:
+    get:
+      tags:
+      - Admin
+      summary: Lister les genres du catalogue
+      operationId: getGenres
+      description: Retourne tous les genres/catégories disponibles.
+      responses:
+        '200':
+          description: Liste des genres
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: public, max-age=86400
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Genre'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags:
+      - Admin
+      summary: Créer un nouveau genre
+      operationId: createGenre
+      description: Ajoute une catégorie au catalogue.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenreCreate'
+      responses:
+        '201':
+          description: Genre créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Genre'
+        '409':
+          description: Genre déjà existant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /admin/genres/{genreId}:
+    parameters:
+    - name: genreId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    put:
+      tags:
+      - Admin
+      summary: Modifier un genre
+      operationId: updateGenre
+      description: Mise à jour complète (PUT idempotent).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenreCreate'
+      responses:
+        '200':
+          description: Genre mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Genre'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags:
+      - Admin
+      summary: Supprimer un genre
+      operationId: deleteGenre
+      description: Supprime un genre (DELETE idempotent).
+      responses:
+        '204':
+          description: Genre supprimé
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Genre utilisé par des contenus existants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /admin/reports:
+    get:
+      tags:
+      - Admin
+      summary: Générer un rapport d'utilisation
+      operationId: getReport
+      description: 'Génère un rapport exportable (JSON ou CSV). Retourne 202 si la génération est asynchrone pour les rapports
+        volumineux.
+
+        '
+      parameters:
+      - name: type
+        in: query
+        required: true
+        schema:
+          type: string
+          enum:
+          - users
+          - subscriptions
+          - content_performance
+          - revenue
+          - engagement
+      - name: format
+        in: query
+        schema:
+          type: string
+          enum:
+          - json
+          - csv
+          default: json
+      - name: from_date
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: to_date
+        in: query
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: Rapport généré (petit volume)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+            text/csv:
+              schema:
+                type: string
+        '202':
+          description: Rapport en cours de génération (gros volume, asynchrone)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  report_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    example: generating
+                  download_url:
+                    type: string
+                    format: uri
+                    description: URL de téléchargement (disponible une fois généré)
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 'Authentification JWT (RFC 7519) stateless. Le token contient header (algorithme HS512), payload (sub,
+        roles, iat, exp) et signature. Transmis via header Authorization: Bearer <token>.
+
+        '
+    OAuth2:
+      type: oauth2
+      description: OAuth 2.0 Authorization Code Flow pour applications tierces.
+      flows:
+        authorizationCode:
+          authorizationUrl: https://auth.primevideo.amazon.com/oauth/authorize
+          tokenUrl: https://auth.primevideo.amazon.com/oauth/token
+          refreshUrl: https://auth.primevideo.amazon.com/oauth/refresh
+          scopes:
+            read: Lecture des ressources
+            write: Création et modification des ressources
+            admin: Accès administrateur complet
+            stream: Accès au streaming vidéo
+            download: Accès au téléchargement hors-ligne
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      description: Numéro de page (pagination offset)
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    LimitParam:
+      name: limit
+      in: query
+      description: Nombre d'éléments par page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    SortParam:
+      name: sort
+      in: query
+      description: 'Champ et direction de tri (ex: created_at_desc, title_asc, rating_desc)
+
+        '
+      schema:
+        type: string
+        example: created_at_desc
+  responses:
+    NotFound:
+      description: La ressource demandée n'a pas été trouvée (404)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            type: https://api.primevideo.amazon.com/errors/not-found
+            title: Ressource non trouvée
+            status: 404
+            detail: La ressource demandée n'existe pas
+            timestamp: '2026-01-15T10:30:00Z'
+            correlationId: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+    Unauthorized:
+      description: Authentification requise - Token JWT manquant ou invalide (401)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            type: https://api.primevideo.amazon.com/errors/unauthorized
+            title: Authentification requise
+            status: 401
+            detail: Token d'authentification manquant ou invalide
+    Forbidden:
+      description: Accès refusé - authentifié mais non autorisé (403)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            type: https://api.primevideo.amazon.com/errors/forbidden
+            title: Accès refusé
+            status: 403
+            detail: Vous n'avez pas les permissions nécessaires
+    ValidationError:
+      description: Erreur de validation des données (400)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationErrorResponse'
+    TooManyRequests:
+      description: Trop de requêtes - rate limiting (429)
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Secondes avant de réessayer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalError:
+      description: Erreur serveur interne inattendue (500)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            type: https://api.primevideo.amazon.com/errors/internal
+            title: Erreur interne du serveur
+            status: 500
+            detail: Une erreur inattendue est survenue
+            correlationId: xyz-789-correlation-id
+  schemas:
+    AuthRequest:
+      type: object
+      required:
+      - email
+      - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: Adresse email de l'utilisateur
+          example: user@example.com
+        password:
+          type: string
+          minLength: 8
+          description: Mot de passe (min 8 chars, 1 majuscule, 1 chiffre)
+          example: SecurePass123!
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: Token JWT (header.payload.signature encodé Base64)
+          example: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ1c2VyQGV4YW1wbGUuY29tIn0.abc123
+        refresh_token:
+          type: string
+          description: Token de rafraîchissement longue durée
+        token_type:
+          type: string
+          enum:
+          - Bearer
+          example: Bearer
+        expires_in:
+          type: integer
+          description: Durée de validité en secondes
+          example: 3600
+        scope:
+          type: string
+          example: read write stream
+    User:
+      type: object
+      required:
+      - id
+      - email
+      - username
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Identifiant unique
+          example: 12345
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: ^[a-zA-Z0-9_]+$
+          example: john_doe
+        subscription_plan:
+          type: string
+          enum:
+          - FREE
+          - PRIME_MONTHLY
+          - PRIME_ANNUAL
+          example: PRIME_ANNUAL
+        is_active:
+          type: boolean
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-01-15T10:30:00Z'
+        updated_at:
+          type: string
+          format: date-time
+        profiles:
+          type: array
+          maxItems: 6
+          items:
+            $ref: '#/components/schemas/Profile'
+        pin_enabled:
+          type: boolean
+          description: Code PIN activé pour achats/contenu adulte
+        _links:
+          $ref: '#/components/schemas/HATEOASLinks'
+    UserCreate:
+      type: object
+      required:
+      - email
+      - username
+      - password
+      properties:
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: ^[a-zA-Z0-9_]+$
+        password:
+          type: string
+          minLength: 8
+          description: Min 8 caractères, 1 majuscule, 1 chiffre
+        subscription_plan:
+          type: string
+          enum:
+          - FREE
+          - PRIME_MONTHLY
+          - PRIME_ANNUAL
+          default: FREE
+    UserUpdate:
+      type: object
+      required:
+      - email
+      - username
+      properties:
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+    UserPatch:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        pin_code:
+          type: string
+          minLength: 4
+          maxLength: 4
+    UserListResponse:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        total:
+          type: integer
+          example: 150
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 20
+        _links:
+          $ref: '#/components/schemas/PaginationLinks'
+    Profile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Jean
+        avatar_url:
+          type: string
+          format: uri
+        is_child:
+          type: boolean
+          description: Profil Jeunesse (interface simplifiée et filtrée)
+        age_restriction:
+          type: string
+          enum:
+          - ALL
+          - 7+
+          - 13+
+          - 16+
+          - 18+
+        language:
+          type: string
+          example: fr
+        subtitle_preferences:
+          $ref: '#/components/schemas/SubtitlePreferences'
+    ProfileCreate:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          maxLength: 30
+        is_child:
+          type: boolean
+          default: false
+        age_restriction:
+          type: string
+          enum:
+          - ALL
+          - 7+
+          - 13+
+          - 16+
+          - 18+
+          default: 18+
+        language:
+          type: string
+          default: fr
+    SubtitlePreferences:
+      type: object
+      properties:
+        font_size:
+          type: string
+          enum:
+          - small
+          - medium
+          - large
+          - extra_large
+        font_color:
+          type: string
+          example: '#FFFFFF'
+        background_opacity:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+    Media:
+      type: object
+      required:
+      - id
+      - title
+      - type
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          example: The Grand Tour
+        original_title:
+          type: string
+        type:
+          type: string
+          enum:
+          - movie
+          - series
+          - documentary
+          - live_event
+          - short
+        genre:
+          type: array
+          items:
+            type: string
+          example:
+          - action
+          - comedy
+        synopsis:
+          type: string
+        release_date:
+          type: string
+          format: date
+        duration_min:
+          type: integer
+          description: Durée en minutes (pour films)
+        rating_imdb:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 10
+        maturity_rating:
+          type: string
+          enum:
+          - ALL
+          - 7+
+          - 13+
+          - 16+
+          - 18+
+        cast:
+          type: array
+          items:
+            type: string
+        director:
+          type: string
+        available_qualities:
+          type: array
+          items:
+            type: string
+            enum:
+            - SD
+            - HD
+            - FHD
+            - UHD_4K
+        quality_badges:
+          type: array
+          items:
+            type: string
+            enum:
+            - HDR
+            - UHD
+            - AD
+            - SURROUND_5_1
+            - DOLBY_ATMOS
+          description: Badges de qualité (HDR, UHD, AD, 5.1)
+        audio_languages:
+          type: array
+          items:
+            type: string
+        subtitle_languages:
+          type: array
+          items:
+            type: string
+        pricing:
+          $ref: '#/components/schemas/MediaPricing'
+        poster_url:
+          type: string
+          format: uri
+        backdrop_url:
+          type: string
+          format: uri
+        trailer_url:
+          type: string
+          format: uri
+        seasons_count:
+          type: integer
+          description: Nombre de saisons (séries uniquement)
+        has_xray:
+          type: boolean
+        has_dialogue_boost:
+          type: boolean
+        is_downloadable:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        _links:
+          $ref: '#/components/schemas/HATEOASLinks'
+    MediaPricing:
+      type: object
+      properties:
+        is_prime_inclusive:
+          type: boolean
+          description: Inclus avec Prime (SVOD) ou payant (TVOD)
+        rent_price:
+          type: number
+          format: double
+          description: Prix de location (null si inclus Prime)
+        buy_price:
+          type: number
+          format: double
+          description: Prix d'achat (null si inclus Prime)
+        currency:
+          type: string
+          example: EUR
+        required_channel:
+          type: string
+          description: Chaîne tierce requise (null si Prime ou TVOD)
+    MediaListResponse:
+      type: object
+      properties:
+        media:
+          type: array
+          items:
+            $ref: '#/components/schemas/Media'
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        _links:
+          $ref: '#/components/schemas/PaginationLinks'
+    Season:
+      type: object
+      properties:
+        season_number:
+          type: integer
+        title:
+          type: string
+        episodes_count:
+          type: integer
+        release_date:
+          type: string
+          format: date
+        _links:
+          $ref: '#/components/schemas/HATEOASLinks'
+    Episode:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        episode_number:
+          type: integer
+        title:
+          type: string
+        synopsis:
+          type: string
+        duration_min:
+          type: integer
+        air_date:
+          type: string
+          format: date
+        has_skip_intro:
+          type: boolean
+          description: Saut d'introduction disponible
+        skip_intro_start_sec:
+          type: integer
+        skip_intro_end_sec:
+          type: integer
+    XRayData:
+      type: object
+      properties:
+        media_id:
+          type: string
+          format: uuid
+        scenes:
+          type: array
+          items:
+            type: object
+            properties:
+              scene_id:
+                type: string
+                format: uuid
+              timestamp_range:
+                $ref: '#/components/schemas/TimestampRange'
+              actors_on_screen:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    character:
+                      type: string
+                    imdb_id:
+                      type: string
+                    photo_url:
+                      type: string
+                      format: uri
+              music_playing:
+                type: object
+                properties:
+                  title:
+                    type: string
+                  artist:
+                    type: string
+                  album:
+                    type: string
+                  amazon_music_url:
+                    type: string
+                    format: uri
+              trivia:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    text:
+                      type: string
+                    source:
+                      type: string
+                      example: IMDb
+              has_buyable_products:
+                type: boolean
+    TimestampRange:
+      type: object
+      properties:
+        start_sec:
+          type: integer
+        end_sec:
+          type: integer
+    LookAndBuyProduct:
+      type: object
+      properties:
+        product_id:
+          type: string
+        name:
+          type: string
+          example: Veste en cuir marron
+        category:
+          type: string
+          enum:
+          - clothing
+          - accessories
+          - furniture
+          - electronics
+        price:
+          type: number
+          format: double
+        currency:
+          type: string
+          example: EUR
+        image_url:
+          type: string
+          format: uri
+        amazon_product_url:
+          type: string
+          format: uri
+          description: Lien d'achat Amazon en un clic
+        confidence_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Score de confiance de l'identification IA
+    SubscriptionPlan:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Prime Video Annual
+        type:
+          type: string
+          enum:
+          - PRIME_MONTHLY
+          - PRIME_ANNUAL
+          - CHANNEL
+        price:
+          type: number
+          format: double
+        currency:
+          type: string
+        billing_period:
+          type: string
+          enum:
+          - monthly
+          - annual
+        features:
+          type: array
+          items:
+            type: string
+        channel_name:
+          type: string
+          description: Nom de la chaîne tierce (type CHANNEL uniquement)
+    UserSubscription:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        plan:
+          $ref: '#/components/schemas/SubscriptionPlan'
+        status:
+          type: string
+          enum:
+          - active
+          - cancelled
+          - expired
+          - trial
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+        auto_renew:
+          type: boolean
+    SubscriptionCreate:
+      type: object
+      required:
+      - plan_id
+      - payment_method_id
+      properties:
+        plan_id:
+          type: string
+          format: uuid
+        payment_method_id:
+          type: string
+          format: uuid
+    StreamInfo:
+      type: object
+      properties:
+        media_id:
+          type: string
+          format: uuid
+        manifest_url:
+          type: string
+          format: uri
+          description: URL du manifeste HLS/DASH
+        protocol:
+          type: string
+          enum:
+          - HLS
+          - DASH
+        drm:
+          type: object
+          properties:
+            type:
+              type: string
+              enum:
+              - WIDEVINE
+              - FAIRPLAY
+              - PLAYREADY
+            license_url:
+              type: string
+              format: uri
+        available_qualities:
+          type: array
+          items:
+            type: object
+            properties:
+              quality:
+                type: string
+                enum:
+                - SD
+                - HD
+                - FHD
+                - UHD_4K
+              bitrate_kbps:
+                type: integer
+              resolution:
+                type: string
+                example: 1920x1080
+        audio_tracks:
+          type: array
+          items:
+            type: object
+            properties:
+              language:
+                type: string
+              codec:
+                type: string
+              channels:
+                type: string
+                enum:
+                - stereo
+                - '5.1'
+                - dolby_atmos
+        subtitle_tracks:
+          type: array
+          items:
+            type: object
+            properties:
+              language:
+                type: string
+              format:
+                type: string
+                enum:
+                - srt
+                - vtt
+                - ttml
+        dialogue_boost:
+          type: object
+          description: Paramètres Dialogue Boost IA appliqués
+          properties:
+            enabled:
+              type: boolean
+            level:
+              type: string
+              enum:
+              - 'off'
+              - low
+              - medium
+              - high
+        resume_position_sec:
+          type: integer
+          description: Position de reprise en secondes
+    WatchHistoryEntry:
+      type: object
+      properties:
+        media_id:
+          type: string
+          format: uuid
+        media_title:
+          type: string
+        media_type:
+          type: string
+          enum:
+          - movie
+          - series
+        episode_info:
+          type: object
+          properties:
+            season:
+              type: integer
+            episode:
+              type: integer
+            title:
+              type: string
+        progress_sec:
+          type: integer
+        total_duration_sec:
+          type: integer
+        progress_percent:
+          type: number
+          format: float
+        is_completed:
+          type: boolean
+        watched_at:
+          type: string
+          format: date-time
+        poster_url:
+          type: string
+          format: uri
+    WatchHistoryResponse:
+      type: object
+      properties:
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/WatchHistoryEntry'
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        _links:
+          $ref: '#/components/schemas/PaginationLinks'
+    RecommendationCarousel:
+      type: object
+      properties:
+        carousel_id:
+          type: string
+        title:
+          type: string
+          example: Parce que vous avez regardé The Boys
+        algorithm:
+          type: string
+          enum:
+          - collaborative_filtering
+          - content_based
+          - trending
+          - seasonal
+          - mood_based
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Media'
+    RecommendationResponse:
+      type: object
+      properties:
+        profile_id:
+          type: string
+          format: uuid
+        carousels:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecommendationCarousel'
+        _links:
+          $ref: '#/components/schemas/PaginationLinks'
+    AdaptiveSummary:
+      type: object
+      properties:
+        media_id:
+          type: string
+          format: uuid
+        media_title:
+          type: string
+        season_covered:
+          type: integer
+        episodes_watched:
+          type: array
+          items:
+            type: integer
+          description: Numéros d'épisodes réellement vus par le profil
+        format:
+          type: string
+          enum:
+          - text
+          - video
+          - audio
+        text_summary:
+          type: string
+          description: Résumé textuel (format text)
+        media_url:
+          type: string
+          format: uri
+          description: URL du résumé vidéo/audio (format video/audio)
+        generated_at:
+          type: string
+          format: date-time
+        spoiler_free:
+          type: boolean
+          default: true
+          description: Garanti sans spoil des épisodes non vus
+    Download:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        media_id:
+          type: string
+          format: uuid
+        media_title:
+          type: string
+        quality:
+          type: string
+          enum:
+          - economical
+          - standard
+          - optimal
+        storage:
+          type: string
+          enum:
+          - internal
+          - sd_card
+        status:
+          type: string
+          enum:
+          - queued
+          - downloading
+          - completed
+          - expired
+          - failed
+        progress_percent:
+          type: number
+          format: float
+        file_size_mb:
+          type: number
+          format: float
+        expires_at:
+          type: string
+          format: date-time
+    WatchlistResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              media:
+                $ref: '#/components/schemas/Media'
+              added_at:
+                type: string
+                format: date-time
+        total:
+          type: integer
+        page:
+          type: integer
+        _links:
+          $ref: '#/components/schemas/PaginationLinks'
+    Error:
+      type: object
+      required:
+      - type
+      - title
+      - status
+      properties:
+        type:
+          type: string
+          format: uri
+          description: URI identifiant le type d'erreur
+        title:
+          type: string
+          description: Résumé court du problème
+        status:
+          type: integer
+          description: Code de statut HTTP
+        detail:
+          type: string
+          description: Explication détaillée
+        instance:
+          type: string
+          format: uri
+          description: URI de l'occurrence spécifique
+        timestamp:
+          type: string
+          format: date-time
+        correlationId:
+          type: string
+          format: uuid
+          description: ID de corrélation pour le traçage dans les logs
+    ValidationErrorResponse:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+          example: Erreur de validation
+        status:
+          type: integer
+          example: 400
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: email
+              code:
+                type: string
+                example: INVALID_FORMAT
+              message:
+                type: string
+                example: Format d'email invalide
+    HATEOASLinks:
+      type: object
+      description: Liens HATEOAS pour la navigation entre ressources
+      additionalProperties:
+        type: string
+      example:
+        self: /v1/users/42
+        profiles: /v1/users/42/profiles
+        subscriptions: /v1/users/42/subscriptions
+        history: /v1/users/42/profiles/default/history
+    PaginationLinks:
+      type: object
+      properties:
+        self:
+          type: string
+          example: /v1/media?page=2&limit=20
+        first:
+          type: string
+          example: /v1/media?page=1&limit=20
+        prev:
+          type: string
+          example: /v1/media?page=1&limit=20
+        next:
+          type: string
+          example: /v1/media?page=3&limit=20
+        last:
+          type: string
+          example: /v1/media?page=10&limit=20
+    Review:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        media_id:
+          type: string
+          format: uuid
+        user_id:
+          type: integer
+          format: int64
+        username:
+          type: string
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Note de 1 à 5 étoiles
+        title:
+          type: string
+          maxLength: 150
+        comment:
+          type: string
+          maxLength: 2000
+        is_spoiler:
+          type: boolean
+          default: false
+        helpful_count:
+          type: integer
+          description: Nombre de votes "utile"
+        report_count:
+          type: integer
+          description: Nombre de signalements
+        moderation_status:
+          type: string
+          enum:
+          - published
+          - pending
+          - rejected
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ReviewCreate:
+      type: object
+      required:
+      - rating
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        title:
+          type: string
+          maxLength: 150
+        comment:
+          type: string
+          maxLength: 2000
+        is_spoiler:
+          type: boolean
+          default: false
+    ReviewListResponse:
+      type: object
+      properties:
+        reviews:
+          type: array
+          items:
+            $ref: '#/components/schemas/Review'
+        average_rating:
+          type: number
+          format: float
+        total:
+          type: integer
+        page:
+          type: integer
+        _links:
+          $ref: '#/components/schemas/PaginationLinks'
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+          - new_release
+          - continue_watching
+          - recommendation
+          - promotion
+          - system
+          - watchparty
+        title:
+          type: string
+        message:
+          type: string
+        is_read:
+          type: boolean
+          default: false
+        media_id:
+          type: string
+          format: uuid
+          description: Média lié (optionnel)
+        action_url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+    NotificationListResponse:
+      type: object
+      properties:
+        notifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+        unread_count:
+          type: integer
+        total:
+          type: integer
+        page:
+          type: integer
+        _links:
+          $ref: '#/components/schemas/PaginationLinks'
+    BroadcastNotification:
+      type: object
+      required:
+      - title
+      - message
+      properties:
+        title:
+          type: string
+          maxLength: 100
+        message:
+          type: string
+          maxLength: 500
+        type:
+          type: string
+          enum:
+          - promotion
+          - new_release
+          - system
+        target_audience:
+          type: object
+          properties:
+            subscription_plans:
+              type: array
+              items:
+                type: string
+                enum:
+                - FREE
+                - PRIME_MONTHLY
+                - PRIME_ANNUAL
+            regions:
+              type: array
+              items:
+                type: string
+              description: Codes pays ISO 3166-1
+            all_users:
+              type: boolean
+              default: false
+        scheduled_at:
+          type: string
+          format: date-time
+          description: Date d'envoi programmé (null = immédiat)
+    PaymentMethod:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+          - credit_card
+          - debit_card
+          - paypal
+          - amazon_pay
+          - bank_transfer
+        last_four:
+          type: string
+          minLength: 4
+          maxLength: 4
+          description: 4 derniers chiffres (données sensibles masquées)
+        brand:
+          type: string
+          enum:
+          - visa
+          - mastercard
+          - amex
+          - discover
+        expiry_month:
+          type: integer
+          minimum: 1
+          maximum: 12
+        expiry_year:
+          type: integer
+        is_default:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+    PaymentMethodCreate:
+      type: object
+      required:
+      - type
+      - token
+      properties:
+        type:
+          type: string
+          enum:
+          - credit_card
+          - debit_card
+          - paypal
+          - amazon_pay
+        token:
+          type: string
+          description: Token de paiement sécurisé (Stripe/PSP) — jamais le numéro brut
+        is_default:
+          type: boolean
+          default: false
+    Device:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Samsung Smart TV
+        type:
+          type: string
+          enum:
+          - smart_tv
+          - mobile
+          - tablet
+          - web_browser
+          - streaming_stick
+          - game_console
+        os:
+          type: string
+          example: Android 14
+        last_active_at:
+          type: string
+          format: date-time
+        is_current:
+          type: boolean
+          description: Appareil utilisé pour cette session
+        registered_at:
+          type: string
+          format: date-time
+    DeviceRegister:
+      type: object
+      required:
+      - name
+      - type
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        type:
+          type: string
+          enum:
+          - smart_tv
+          - mobile
+          - tablet
+          - web_browser
+          - streaming_stick
+          - game_console
+        device_token:
+          type: string
+          description: Token unique de l'appareil pour les push notifications
+    SearchHistoryResponse:
+      type: object
+      properties:
+        searches:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              query:
+                type: string
+              results_count:
+                type: integer
+              searched_at:
+                type: string
+                format: date-time
+        total:
+          type: integer
+        page:
+          type: integer
+        _links:
+          $ref: '#/components/schemas/PaginationLinks'
+    WatchParty:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        media_id:
+          type: string
+          format: uuid
+        media_title:
+          type: string
+        host_user_id:
+          type: integer
+          format: int64
+        invite_code:
+          type: string
+          minLength: 6
+          maxLength: 8
+          description: Code d'invitation à partager
+        status:
+          type: string
+          enum:
+          - waiting
+          - playing
+          - paused
+          - ended
+        participants:
+          type: array
+          items:
+            type: object
+            properties:
+              user_id:
+                type: integer
+                format: int64
+              username:
+                type: string
+              joined_at:
+                type: string
+                format: date-time
+        max_participants:
+          type: integer
+          default: 100
+        chat_enabled:
+          type: boolean
+          default: true
+        reactions_enabled:
+          type: boolean
+          default: true
+          description: Réactions vidéo/audio en direct
+        current_position_sec:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+    WatchPartyCreate:
+      type: object
+      required:
+      - media_id
+      properties:
+        media_id:
+          type: string
+          format: uuid
+        max_participants:
+          type: integer
+          minimum: 2
+          maximum: 100
+          default: 10
+        chat_enabled:
+          type: boolean
+          default: true
+        reactions_enabled:
+          type: boolean
+          default: true
+    Playlist:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        owner_id:
+          type: integer
+          format: int64
+        owner_username:
+          type: string
+        is_public:
+          type: boolean
+        items_count:
+          type: integer
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              media:
+                $ref: '#/components/schemas/Media'
+              position:
+                type: integer
+              added_at:
+                type: string
+                format: date-time
+        followers_count:
+          type: integer
+        share_url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        _links:
+          $ref: '#/components/schemas/HATEOASLinks'
+    PlaylistCreate:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+        is_public:
+          type: boolean
+          default: false
+    PlaylistListResponse:
+      type: object
+      properties:
+        playlists:
+          type: array
+          items:
+            $ref: '#/components/schemas/Playlist'
+        total:
+          type: integer
+        page:
+          type: integer
+        _links:
+          $ref: '#/components/schemas/PaginationLinks'
+    UserPreferences:
+      type: object
+      properties:
+        default_audio_language:
+          type: string
+          example: fr
+        default_subtitle_language:
+          type: string
+          example: fr
+        default_quality:
+          type: string
+          enum:
+          - auto
+          - SD
+          - HD
+          - FHD
+          - UHD_4K
+          default: auto
+        autoplay_next_episode:
+          type: boolean
+          default: true
+        autoplay_trailers:
+          type: boolean
+          default: true
+        skip_intro_auto:
+          type: boolean
+          default: false
+          description: Saut automatique des génériques
+        data_saver_wifi:
+          type: boolean
+          default: false
+        data_saver_mobile:
+          type: boolean
+          default: true
+          description: Économiseur de données en réseau mobile
+        pip_enabled:
+          type: boolean
+          default: true
+          description: Image dans l'image (PiP)
+        dialogue_boost_default:
+          type: string
+          enum:
+          - 'off'
+          - low
+          - medium
+          - high
+          default: 'off'
+        notification_preferences:
+          type: object
+          properties:
+            new_releases:
+              type: boolean
+              default: true
+            recommendations:
+              type: boolean
+              default: true
+            promotions:
+              type: boolean
+              default: false
+            watchparty_invites:
+              type: boolean
+              default: true
+    MediaCreate:
+      type: object
+      required:
+      - title
+      - type
+      - genre
+      properties:
+        title:
+          type: string
+        original_title:
+          type: string
+        type:
+          type: string
+          enum:
+          - movie
+          - series
+          - documentary
+          - live_event
+          - short
+        genre:
+          type: array
+          items:
+            type: string
+        synopsis:
+          type: string
+        release_date:
+          type: string
+          format: date
+        duration_min:
+          type: integer
+        cast:
+          type: array
+          items:
+            type: string
+        director:
+          type: string
+        maturity_rating:
+          type: string
+          enum:
+          - ALL
+          - 7+
+          - 13+
+          - 16+
+          - 18+
+        source_file_s3_path:
+          type: string
+          description: Chemin S3 du fichier master pour le pipeline de transcodage
+        available_qualities:
+          type: array
+          items:
+            type: string
+            enum:
+            - SD
+            - HD
+            - FHD
+            - UHD_4K
+        pricing:
+          $ref: '#/components/schemas/MediaPricing'
+        is_downloadable:
+          type: boolean
+          default: true
+    MediaPatch:
+      type: object
+      properties:
+        title:
+          type: string
+        synopsis:
+          type: string
+        pricing:
+          $ref: '#/components/schemas/MediaPricing'
+        maturity_rating:
+          type: string
+          enum:
+          - ALL
+          - 7+
+          - 13+
+          - 16+
+          - 18+
+        is_downloadable:
+          type: boolean
+    AnalyticsOverview:
+      type: object
+      properties:
+        period:
+          type: string
+        total_users:
+          type: integer
+        active_users:
+          type: integer
+        new_subscriptions:
+          type: integer
+        churn_rate:
+          type: number
+          format: float
+          description: Taux de désabonnement (%)
+        total_views:
+          type: integer
+        average_watch_time_min:
+          type: number
+          format: float
+        total_revenue:
+          type: number
+          format: double
+        revenue_by_source:
+          type: object
+          properties:
+            subscriptions:
+              type: number
+              format: double
+            tvod:
+              type: number
+              format: double
+            channels:
+              type: number
+              format: double
+        top_content:
+          type: array
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/TrendingItem'
+    ViewsAnalyticsResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              media_id:
+                type: string
+                format: uuid
+              title:
+                type: string
+              views:
+                type: integer
+              unique_viewers:
+                type: integer
+              avg_watch_percent:
+                type: number
+                format: float
+              completion_rate:
+                type: number
+                format: float
+        total:
+          type: integer
+        page:
+          type: integer
+        _links:
+          $ref: '#/components/schemas/PaginationLinks'
+    RevenueAnalytics:
+      type: object
+      properties:
+        period:
+          type: string
+        total_revenue:
+          type: number
+          format: double
+        currency:
+          type: string
+          example: EUR
+        breakdown:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              subscriptions:
+                type: number
+                format: double
+              tvod_rentals:
+                type: number
+                format: double
+              tvod_purchases:
+                type: number
+                format: double
+              channels:
+                type: number
+                format: double
+    TrendingItem:
+      type: object
+      properties:
+        rank:
+          type: integer
+        media_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        type:
+          type: string
+        views_count:
+          type: integer
+        trend_direction:
+          type: string
+          enum:
+          - up
+          - down
+          - stable
+          - new
+    Genre:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Science-Fiction
+        slug:
+          type: string
+          example: sci-fi
+        description:
+          type: string
+        media_count:
+          type: integer
+          description: Nombre de contenus dans ce genre
+    GenreCreate:
+      type: object
+      required:
+      - name
+      - slug
+      properties:
+        name:
+          type: string
+          maxLength: 50
+        slug:
+          type: string
+          maxLength: 30
+          pattern: ^[a-z0-9-]+$
+        description:
+          type: string
+          maxLength: 200
+    AuditLogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        admin_id:
+          type: integer
+          format: int64
+        admin_username:
+          type: string
+        action:
+          type: string
+          enum:
+          - user_banned
+          - user_suspended
+          - media_created
+          - media_deleted
+          - review_moderated
+          - role_changed
+          - settings_changed
+        target_type:
+          type: string
+          enum:
+          - user
+          - media
+          - review
+          - genre
+          - settings
+        target_id:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+          description: Détails contextuels de l'action
+        ip_address:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    AuditLogResponse:
+      type: object
+      properties:
+        logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLogEntry'
+        total:
+          type: integer
+        page:
+          type: integer
+        _links:
+          $ref: '#/components/schemas/PaginationLinks'
+    Report:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+          - users
+          - subscriptions
+          - content_performance
+          - revenue
+          - engagement
+        period:
+          type: object
+          properties:
+            from:
+              type: string
+              format: date
+            to:
+              type: string
+              format: date
+        generated_at:
+          type: string
+          format: date-time
+        data:
+          type: object
+          additionalProperties: true
+          description: Données du rapport (structure variable selon le type)
+        download_url:
+          type: string
+          format: uri
